@@ -26,16 +26,17 @@ def move_choose_destination(request, page_to_move_id):
         target_parent_models=target_parent_models,
     )
 
-    if request.method == "POST":
-        if move_form.is_valid():
-            # Receive the new parent page (this should never be empty)
-            if move_form.cleaned_data["new_parent_page"]:
-                new_parent_page = move_form.cleaned_data["new_parent_page"]
-                return redirect(
-                    "wagtailadmin_pages:move_confirm",
-                    page_to_move.id,
-                    new_parent_page.id,
-                )
+    if (
+        request.method == "POST"
+        and move_form.is_valid()
+        and move_form.cleaned_data["new_parent_page"]
+    ):
+        new_parent_page = move_form.cleaned_data["new_parent_page"]
+        return redirect(
+            "wagtailadmin_pages:move_confirm",
+            page_to_move.id,
+            new_parent_page.id,
+        )
 
     return TemplateResponse(
         request,

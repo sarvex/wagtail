@@ -108,9 +108,7 @@ class BaseAPIViewSet(GenericViewSet):
         if url is None:
             # Shouldn't happen unless this endpoint isn't actually installed in the router
             raise Exception(
-                "Cannot generate URL to detail view. Is '{}' installed in the API router?".format(
-                    self.__class__.__name__
-                )
+                f"Cannot generate URL to detail view. Is '{self.__class__.__name__}' installed in the API router?"
             )
 
         return redirect(url)
@@ -214,11 +212,9 @@ class BaseAPIViewSet(GenericViewSet):
         allowed_query_parameters = set(
             self.get_available_fields(queryset.model, db_fields_only=True)
         ).union(self.known_query_parameters)
-        unknown_parameters = query_parameters - allowed_query_parameters
-        if unknown_parameters:
+        if unknown_parameters := query_parameters - allowed_query_parameters:
             raise BadRequestError(
-                "query parameter is not an operation or a recognised field: %s"
-                % ", ".join(sorted(unknown_parameters))
+                f'query parameter is not an operation or a recognised field: {", ".join(sorted(unknown_parameters))}'
             )
 
     @classmethod
@@ -251,12 +247,13 @@ class BaseAPIViewSet(GenericViewSet):
 
         # If first field is '*' start with all fields
         # If first field is '_' start with no fields
-        if fields_config and fields_config[0][0] == "*":
-            fields = set(all_fields)
-            fields_config = fields_config[1:]
-        elif fields_config and fields_config[0][0] == "_":
-            fields = set()
-            fields_config = fields_config[1:]
+        if fields_config:
+            if fields_config[0][0] == "*":
+                fields = set(all_fields)
+                fields_config = fields_config[1:]
+            elif fields_config[0][0] == "_":
+                fields = set()
+                fields_config = fields_config[1:]
 
         mentioned_fields = set()
         sub_fields = {}
@@ -274,12 +271,8 @@ class BaseAPIViewSet(GenericViewSet):
 
             mentioned_fields.add(field_name)
 
-        unknown_fields = mentioned_fields - set(all_fields)
-
-        if unknown_fields:
-            raise BadRequestError(
-                "unknown fields: %s" % ", ".join(sorted(unknown_fields))
-            )
+        if unknown_fields := mentioned_fields - set(all_fields):
+            raise BadRequestError(f'unknown fields: {", ".join(sorted(unknown_fields))}')
 
         # Build nested serialisers
         child_serializer_classes = {}
@@ -294,10 +287,14 @@ class BaseAPIViewSet(GenericViewSet):
                 child_sub_fields = sub_fields.get(field_name, [])
 
                 # Inline (aka "child") models should display all fields by default
-                if isinstance(getattr(django_field, "field", None), ParentalKey):
-                    if not child_sub_fields or child_sub_fields[0][0] not in ["*", "_"]:
-                        child_sub_fields = list(child_sub_fields)
-                        child_sub_fields.insert(0, ("*", False, None))
+                if isinstance(
+                    getattr(django_field, "field", None), ParentalKey
+                ) and (
+                    not child_sub_fields
+                    or child_sub_fields[0][0] not in ["*", "_"]
+                ):
+                    child_sub_fields = list(child_sub_fields)
+                    child_sub_fields.insert(0, ("*", False, None))
 
                 # Get a serializer class for the related object
                 child_model = django_field.related_model
@@ -311,12 +308,9 @@ class BaseAPIViewSet(GenericViewSet):
                     router, child_model, child_sub_fields, nested=True
                 )
 
-            else:
-                if field_name in sub_fields:
+            elif field_name in sub_fields:
                     # Sub fields were given for a non-related field
-                    raise BadRequestError(
-                        "'%s' does not support nested fields" % field_name
-                    )
+                raise BadRequestError(f"'{field_name}' does not support nested fields")
 
         # Reorder fields so it matches the order of all_fields
         fields = [field for field in all_fields if field in fields]
@@ -349,17 +343,13 @@ class BaseAPIViewSet(GenericViewSet):
             try:
                 fields_config = parse_fields_parameter(request.GET["fields"])
             except ValueError as e:
-                raise BadRequestError("fields error: %s" % str(e))
+                raise BadRequestError(f"fields error: {str(e)}")
         else:
             # Use default fields
             fields_config = []
 
         # Allow "detail_only" (eg parent) fields on detail view
-        if self.action == "listing_view":
-            show_details = False
-        else:
-            show_details = True
-
+        show_details = self.action != "listing_view"
         return self._get_serializer_class(
             self.request.wagtailapi_router,
             model,
@@ -395,20 +385,12 @@ class BaseAPIViewSet(GenericViewSet):
 
     @classmethod
     def get_model_listing_urlpath(cls, model, namespace=""):
-        if namespace:
-            url_name = namespace + ":listing"
-        else:
-            url_name = "listing"
-
+        url_name = f"{namespace}:listing" if namespace else "listing"
         return reverse(url_name)
 
     @classmethod
     def get_object_detail_urlpath(cls, model, pk, namespace=""):
-        if namespace:
-            url_name = namespace + ":detail"
-        else:
-            url_name = "detail"
-
+        url_name = f"{namespace}:detail" if namespace else "detail"
         return reverse(url_name, args=(pk,))
 
 

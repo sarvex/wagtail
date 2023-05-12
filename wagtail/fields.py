@@ -36,9 +36,10 @@ class RichTextField(models.TextField):
         from wagtail.admin.rich_text import get_rich_text_editor_widget
 
         defaults = {
-            "widget": get_rich_text_editor_widget(self.editor, features=self.features)
-        }
-        defaults.update(kwargs)
+            "widget": get_rich_text_editor_widget(
+                self.editor, features=self.features
+            )
+        } | kwargs
         field = super().formfield(**defaults)
 
         # replace any MaxLengthValidators with RichTextMaxLengthValidators to ignore tags
@@ -84,12 +85,11 @@ class Creator:
 
 class StreamField(models.Field):
     def __init__(self, block_types, use_json_field=None, **kwargs):
-        # extract kwargs that are to be passed on to the block, not handled by super
-        block_opts = {}
-        for arg in ["min_num", "max_num", "block_counts", "collapsed"]:
-            if arg in kwargs:
-                block_opts[arg] = kwargs.pop(arg)
-
+        block_opts = {
+            arg: kwargs.pop(arg)
+            for arg in ["min_num", "max_num", "block_counts", "collapsed"]
+            if arg in kwargs
+        }
         # for a top-level block, the 'blank' kwarg (defaulting to False) always overrides the
         # block's own 'required' meta attribute, even if not passed explicitly; this ensures
         # that the field and block have consistent definitions
@@ -232,8 +232,7 @@ class StreamField(models.Field):
         Override formfield to use a plain forms.Field so that we do no transformation on the value
         (as distinct from the usual fallback of forms.CharField, which transforms it into a string).
         """
-        defaults = {"form_class": BlockField, "block": self.stream_block}
-        defaults.update(kwargs)
+        defaults = {"form_class": BlockField, "block": self.stream_block} | kwargs
         return super().formfield(**defaults)
 
     def value_to_string(self, obj):

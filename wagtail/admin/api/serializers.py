@@ -8,9 +8,7 @@ from wagtail.models import Page
 
 
 def get_model_listing_url(context, model):
-    url_path = context["router"].get_model_listing_urlpath(model)
-
-    if url_path:
+    if url_path := context["router"].get_model_listing_urlpath(model):
         return get_full_url(context["request"], url_path)
 
 

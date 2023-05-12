@@ -10,13 +10,11 @@ class WagtailAPIV2AppConfig(AppConfig):
     verbose_name = _("Wagtail API v2")
 
     def ready(self):
-        # Install cache purging signal handlers
         if getattr(settings, "WAGTAILAPI_USE_FRONTENDCACHE", False):
-            if apps.is_installed("wagtail.contrib.frontend_cache"):
-                from wagtail.api.v2.signal_handlers import register_signal_handlers
-
-                register_signal_handlers()
-            else:
+            if not apps.is_installed("wagtail.contrib.frontend_cache"):
                 raise ImproperlyConfigured(
                     "The setting 'WAGTAILAPI_USE_FRONTENDCACHE' is True but 'wagtail.contrib.frontend_cache' is not in INSTALLED_APPS."
                 )
+            from wagtail.api.v2.signal_handlers import register_signal_handlers
+
+            register_signal_handlers()

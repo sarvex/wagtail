@@ -51,7 +51,7 @@ class AbstractSetting(models.Model):
         Returns the name of the attribute that should be used to store
         a reference to the fetched/created object on a request.
         """
-        return "_{}.{}".format(cls._meta.app_label, cls._meta.model_name).lower()
+        return f"_{cls._meta.app_label}.{cls._meta.model_name}".lower()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -81,9 +81,7 @@ class AbstractSetting(models.Model):
 
         if not hasattr(self, attribute_name):
             raise AttributeError(
-                "'{}' object has no attribute '{}'".format(
-                    self.__class__.__name__, attribute_name
-                )
+                f"'{self.__class__.__name__}' object has no attribute '{attribute_name}'"
             )
 
         page = getattr(self, attribute_name)
@@ -166,9 +164,7 @@ class BaseGenericSetting(AbstractSetting):
         """
 
         first_obj = cls.base_queryset().first()
-        if first_obj is None:
-            return cls.objects.create()
-        return first_obj
+        return cls.objects.create() if first_obj is None else first_obj
 
     @classmethod
     def load(cls, request_or_site=None):

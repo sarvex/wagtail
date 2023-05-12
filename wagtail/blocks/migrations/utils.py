@@ -13,14 +13,9 @@ class InvalidBlockDefError(Exception):
     def __str__(self):
         message = ""
         if self.instance is not None:
-            message += "Invalid block def in {} object ({})".format(
-                self.instance.__class__.__name__, self.instance.id
-            )
+            message += f"Invalid block def in {self.instance.__class__.__name__} object ({self.instance.id})"
             if self.revision is not None:
-                message += " for revision id ({}) created at {}".format(
-                    self.revision.id,
-                    self.revision.created_at,
-                )
+                message += f" for revision id ({self.revision.id}) created at {self.revision.created_at}"
             if self.args:
                 message += "\n"
 
@@ -92,7 +87,7 @@ def map_block_value(block_value, block_def, block_path, operation, **kwargs):
         )
 
     else:
-        raise ValueError("Unexpected Structural Block: {}".format(block_value))
+        raise ValueError(f"Unexpected Structural Block: {block_value}")
 
 
 def map_stream_block_value(stream_block_value, block_def, block_path, **kwargs):
@@ -123,9 +118,7 @@ def map_stream_block_value(stream_block_value, block_def, block_path, **kwargs):
             try:
                 child_block_def = block_def.child_blocks[child_block["type"]]
             except KeyError:
-                raise InvalidBlockDefError(
-                    "No current block def named {}".format(child_block["type"])
-                )
+                raise InvalidBlockDefError(f'No current block def named {child_block["type"]}')
             mapped_child_value = map_block_value(
                 child_block["value"],
                 block_def=child_block_def,
@@ -165,7 +158,7 @@ def map_struct_block_value(struct_block_value, block_def, block_path, **kwargs):
             try:
                 child_block_def = block_def.child_blocks[key]
             except KeyError:
-                raise InvalidBlockDefError("No current block def named {}".format(key))
+                raise InvalidBlockDefError(f"No current block def named {key}")
             altered_child_value = map_block_value(
                 child_value,
                 block_def=child_block_def,
@@ -272,20 +265,13 @@ def apply_changes_to_raw_data(
         altered_raw_data:
     """
 
-    if block_path_str == "":
-        # If block_path_str is "", we're directly applying the operation on the top level
-        # streamblock.
-        block_path = []
-    else:
-        block_path = block_path_str.split(".")
+    block_path = [] if block_path_str == "" else block_path_str.split(".")
     block_def = streamfield.field.stream_block
 
-    altered_raw_data = map_block_value(
+    return map_block_value(
         raw_data,
         block_def=block_def,
         block_path=block_path,
         operation=operation,
         **kwargs,
     )
-
-    return altered_raw_data

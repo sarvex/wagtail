@@ -10,10 +10,7 @@ def revision_date_expired(r):
     if not expiry_str:
         return False
     expire_at = dateparse.parse_datetime(expiry_str)
-    if expire_at < timezone.now():
-        return True
-    else:
-        return False
+    return expire_at < timezone.now()
 
 
 class Command(BaseCommand):
@@ -39,15 +36,12 @@ class Command(BaseCommand):
             if issubclass(model, DraftStateMixin) and not issubclass(model, Page)
         ]
 
-        # 1. get all expired objects with live = True
-        expired_objects = []
-        for model in models:
-            expired_objects += [
-                model.objects.filter(live=True, expire_at__lt=timezone.now()).order_by(
-                    "expire_at"
-                )
-            ]
-
+        expired_objects = [
+            model.objects.filter(live=True, expire_at__lt=timezone.now()).order_by(
+                "expire_at"
+            )
+            for model in models
+        ]
         if dryrun:
             self.stdout.write("\n---------------------------------")
             if any(expired_objects):

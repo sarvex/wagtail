@@ -44,7 +44,7 @@ class TestDocumentIndexView(WagtailTestUtils, TestCase):
 
     def make_docs(self):
         for i in range(50):
-            document = models.Document(title="Test " + str(i))
+            document = models.Document(title=f"Test {str(i)}")
             document.save()
 
     def test_pagination(self):
@@ -149,7 +149,7 @@ class TestDocumentIndexView(WagtailTestUtils, TestCase):
 
         edit_url = reverse("wagtaildocs:edit", args=(doc.id,))
         next_url = quote(response._request.get_full_path())
-        self.assertContains(response, "%s?next=%s" % (edit_url, next_url))
+        self.assertContains(response, f"{edit_url}?next={next_url}")
 
     def test_search_form_rendered(self):
         response = self.get()
@@ -175,7 +175,7 @@ class TestDocumentIndexViewSearch(WagtailTestUtils, TransactionTestCase):
 
     def make_docs(self):
         for i in range(50):
-            document = models.Document(title="Test " + str(i))
+            document = models.Document(title=f"Test {str(i)}")
             document.save()
 
     def test_search(self):
@@ -673,7 +673,7 @@ class TestDocumentEditView(WagtailTestUtils, TestCase):
         self.assertRedirects(response, reverse("wagtaildocs:index"))
         self.document.refresh_from_db()
         self.assertEqual(old_filename, self.document.file.name)
-        self.assertEqual(self.document.file.name, "documents/" + new_name)
+        self.assertEqual(self.document.file.name, f"documents/{new_name}")
         self.assertEqual(self.document.file.read(), b"An updated test content.")
 
     def test_reupload_different_name(self):
@@ -696,7 +696,7 @@ class TestDocumentEditView(WagtailTestUtils, TestCase):
         self.document.refresh_from_db()
         self.assertFalse(self.document.file.storage.exists(old_filename))
         self.assertTrue(self.document.file.storage.exists(self.document.file.name))
-        self.assertEqual(self.document.file.name, "documents/" + new_name)
+        self.assertEqual(self.document.file.name, f"documents/{new_name}")
         self.assertEqual(self.document.file.read(), b"An updated test content.")
 
 
@@ -1592,7 +1592,7 @@ class TestDocumentChooserView(WagtailTestUtils, TestCase):
 
     def make_docs(self):
         for i in range(50):
-            document = models.Document(title="Test " + str(i))
+            document = models.Document(title=f"Test {str(i)}")
             document.save()
 
     def test_pagination(self):

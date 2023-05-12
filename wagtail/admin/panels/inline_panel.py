@@ -129,7 +129,7 @@ class InlinePanel(Panel):
                 instance=empty_form.instance,
                 request=self.request,
                 form=empty_form,
-                prefix=("%s-__prefix__" % self.prefix),
+                prefix=f"{self.prefix}-__prefix__",
             )
 
         def get_comparison(self):

@@ -85,7 +85,7 @@ class ImageTransformOperationTestCase(TestCase):
             for attr, value in expected_output.items():
                 self.assertEqual(getattr(operation, attr), value)
 
-        test_filter_spec.__name__ = str("test_filter_%s" % filter_spec)
+        test_filter_spec.__name__ = str(f"test_filter_{filter_spec}")
         return test_filter_spec
 
     @classmethod
@@ -96,7 +96,7 @@ class ImageTransformOperationTestCase(TestCase):
             )
 
         test_filter_spec_error.__name__ = str(
-            "test_filter_%s_raises_%s" % (filter_spec, InvalidFilterSpecError.__name__)
+            f"test_filter_{filter_spec}_raises_{InvalidFilterSpecError.__name__}"
         )
         return test_filter_spec_error
 
@@ -117,7 +117,7 @@ class ImageTransformOperationTestCase(TestCase):
             # Check
             self.assertEqual(context.operations, expected_output)
 
-        test_run.__name__ = str("test_run_%s" % filter_spec)
+        test_run.__name__ = str(f"test_run_{filter_spec}")
         return test_run
 
     @classmethod
@@ -135,7 +135,7 @@ class ImageTransformOperationTestCase(TestCase):
             with self.assertRaises(ValueError):
                 operation.run(context, image)
 
-        test_norun.__name__ = str("test_norun_%s" % filter_spec)
+        test_norun.__name__ = str(f"test_norun_{filter_spec}")
         return test_norun
 
     @classmethod

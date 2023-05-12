@@ -15,16 +15,12 @@ def image(image, filterspec, **attrs):
 
     if not allowed_filter_pattern.match(filterspec):
         raise template.TemplateSyntaxError(
-            "filter specs in 'image' tag may only contain A-Z, a-z, 0-9, dots, hyphens, pipes and underscores. "
-            "(given filter: {})".format(filterspec)
+            f"filter specs in 'image' tag may only contain A-Z, a-z, 0-9, dots, hyphens, pipes and underscores. (given filter: {filterspec})"
         )
 
     rendition = get_rendition_or_not_found(image, filterspec)
 
-    if attrs:
-        return rendition.img_tag(attrs)
-    else:
-        return rendition
+    return rendition.img_tag(attrs) if attrs else rendition
 
 
 class WagtailImagesExtension(Extension):

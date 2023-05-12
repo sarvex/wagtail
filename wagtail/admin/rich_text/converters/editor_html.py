@@ -172,10 +172,9 @@ class PageLinkHandler:
             page = Page.objects.get(id=attrs["id"])
 
             attrs = 'data-linktype="page" data-id="%d" ' % page.id
-            parent_page = page.get_parent()
-            if parent_page:
+            if parent_page := page.get_parent():
                 attrs += 'data-parent-id="%d" ' % parent_page.id
 
-            return '<a %shref="%s">' % (attrs, escape(page.localized.specific.url))
+            return f'<a {attrs}href="{escape(page.localized.specific.url)}">'
         except Page.DoesNotExist:
             return "<a>"

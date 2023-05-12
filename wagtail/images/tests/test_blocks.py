@@ -44,16 +44,12 @@ class TestImageChooserBlock(TestCase):
         Get the generated filename for a resized image
         """
         name, ext = os.path.splitext(os.path.basename(image.file.name))
-        return "{}images/{}.{}{}".format(settings.MEDIA_URL, name, filterspec, ext)
+        return f"{settings.MEDIA_URL}images/{name}.{filterspec}{ext}"
 
     def test_render(self):
         block = ImageChooserBlock()
         html = block.render(self.image)
-        expected_html = (
-            '<img alt="Test image" src="{}" width="640" height="480">'.format(
-                self.get_image_filename(self.image, "original")
-            )
-        )
+        expected_html = f'<img alt="Test image" src="{self.get_image_filename(self.image, "original")}" width="640" height="480">'
 
         self.assertHTMLEqual(html, expected_html)
 

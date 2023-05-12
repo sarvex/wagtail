@@ -68,7 +68,7 @@ class TestFormResponsesPanel(TestCase):
         result = self.panel.render_html()
 
         url = reverse("wagtailforms:list_submissions", args=(self.form_page.id,))
-        link = '<a href="{}">1</a>'.format(url)
+        link = f'<a href="{url}">1</a>'
 
         self.assertIn(link, result)
 
@@ -117,7 +117,7 @@ class TestFormResponsesPanelWithCustomSubmissionClass(WagtailTestUtils, TestCase
         result = self.panel.render_html()
 
         url = reverse("wagtailforms:list_submissions", args=(self.form_page.id,))
-        link = '<a href="{}">1</a>'.format(url)
+        link = f'<a href="{url}">1</a>'
 
         self.assertIn(link, result)
 
@@ -141,7 +141,7 @@ class TestFormsIndex(WagtailTestUtils, TestCase):
         for i in range(100):
             self.form_page.add_child(
                 instance=FormPage(
-                    title="Form " + str(i), slug="form-" + str(i), live=True
+                    title=f"Form {str(i)}", slug=f"form-{str(i)}", live=True
                 )
             )
 
@@ -378,7 +378,7 @@ class TestFormsSubmissionsList(WagtailTestUtils, TestCase):
         """
         This makes 100 submissions to test pagination on the forms submissions page
         """
-        for i in range(100):
+        for _ in range(100):
             submission = FormSubmission(
                 page=self.form_page, form_data={"hello": "world"}
             )
@@ -635,8 +635,8 @@ class TestFormsSubmissionsExport(WagtailTestUtils, TestCase):
             new_form_submission = FormSubmission.objects.create(
                 page=self.form_page,
                 form_data={
-                    "your-email": "new@example-%s.com" % i,
-                    "your-message": "I like things x %s" % i,
+                    "your-email": f"new@example-{i}.com",
+                    "your-message": f"I like things x {i}",
                 },
             )
             if settings.USE_TZ:
@@ -1080,11 +1080,13 @@ class TestCustomFormsSubmissionsList(WagtailTestUtils, TestCase):
         """
         for i in range(100):
             submission = CustomFormPageSubmission(
-                user=self.create_test_user_without_admin("generated-username-%s" % i),
+                user=self.create_test_user_without_admin(
+                    f"generated-username-{i}"
+                ),
                 page=self.form_page,
                 form_data={
-                    "your_email": "generated-your-email-%s" % i,
-                    "your_message": "generated-your-message-%s" % i,
+                    "your_email": f"generated-your-email-{i}",
+                    "your_message": f"generated-your-message-{i}",
                 },
             )
             submission.save()
@@ -1220,8 +1222,12 @@ class TestDeleteFormSubmission(WagtailTestUtils, TestCase):
 
     def test_delete_submission_show_confirmation(self):
         response = self.client.get(
-            reverse("wagtailforms:delete_submissions", args=(self.form_page.id,))
-            + "?selected-submissions={}".format(FormSubmission.objects.first().id)
+            (
+                reverse(
+                    "wagtailforms:delete_submissions", args=(self.form_page.id,)
+                )
+                + f"?selected-submissions={FormSubmission.objects.first().id}"
+            )
         )
         # Check show confirm page when HTTP method is GET
         self.assertTemplateUsed(response, "wagtailforms/confirm_delete.html")
@@ -1231,8 +1237,12 @@ class TestDeleteFormSubmission(WagtailTestUtils, TestCase):
 
     def test_delete_submission_with_permissions(self):
         response = self.client.post(
-            reverse("wagtailforms:delete_submissions", args=(self.form_page.id,))
-            + "?selected-submissions={}".format(FormSubmission.objects.first().id)
+            (
+                reverse(
+                    "wagtailforms:delete_submissions", args=(self.form_page.id,)
+                )
+                + f"?selected-submissions={FormSubmission.objects.first().id}"
+            )
         )
 
         # Check that the submission is gone
@@ -1245,9 +1255,11 @@ class TestDeleteFormSubmission(WagtailTestUtils, TestCase):
 
     def test_delete_multiple_submissions_with_permissions(self):
         response = self.client.post(
-            reverse("wagtailforms:delete_submissions", args=(self.form_page.id,))
-            + "?selected-submissions={}&selected-submissions={}".format(
-                FormSubmission.objects.first().id, FormSubmission.objects.last().id
+            (
+                reverse(
+                    "wagtailforms:delete_submissions", args=(self.form_page.id,)
+                )
+                + f"?selected-submissions={FormSubmission.objects.first().id}&selected-submissions={FormSubmission.objects.last().id}"
             )
         )
 
@@ -1263,8 +1275,12 @@ class TestDeleteFormSubmission(WagtailTestUtils, TestCase):
         self.login(username="eventeditor", password="password")
 
         response = self.client.post(
-            reverse("wagtailforms:delete_submissions", args=(self.form_page.id,))
-            + "?selected-submissions={}".format(FormSubmission.objects.first().id)
+            (
+                reverse(
+                    "wagtailforms:delete_submissions", args=(self.form_page.id,)
+                )
+                + f"?selected-submissions={FormSubmission.objects.first().id}"
+            )
         )
 
         # Check that the user received a permission denied response
@@ -1313,9 +1329,11 @@ class TestDeleteCustomFormSubmission(WagtailTestUtils, TestCase):
 
     def test_delete_submission_show_confirmation(self):
         response = self.client.get(
-            reverse("wagtailforms:delete_submissions", args=(self.form_page.id,))
-            + "?selected-submissions={}".format(
-                CustomFormPageSubmission.objects.first().id
+            (
+                reverse(
+                    "wagtailforms:delete_submissions", args=(self.form_page.id,)
+                )
+                + f"?selected-submissions={CustomFormPageSubmission.objects.first().id}"
             )
         )
 
@@ -1327,9 +1345,11 @@ class TestDeleteCustomFormSubmission(WagtailTestUtils, TestCase):
 
     def test_delete_submission_with_permissions(self):
         response = self.client.post(
-            reverse("wagtailforms:delete_submissions", args=(self.form_page.id,))
-            + "?selected-submissions={}".format(
-                CustomFormPageSubmission.objects.first().id
+            (
+                reverse(
+                    "wagtailforms:delete_submissions", args=(self.form_page.id,)
+                )
+                + f"?selected-submissions={CustomFormPageSubmission.objects.first().id}"
             )
         )
 
@@ -1343,10 +1363,11 @@ class TestDeleteCustomFormSubmission(WagtailTestUtils, TestCase):
 
     def test_delete_multiple_submissions_with_permissions(self):
         response = self.client.post(
-            reverse("wagtailforms:delete_submissions", args=(self.form_page.id,))
-            + "?selected-submissions={}&selected-submissions={}".format(
-                CustomFormPageSubmission.objects.first().id,
-                CustomFormPageSubmission.objects.last().id,
+            (
+                reverse(
+                    "wagtailforms:delete_submissions", args=(self.form_page.id,)
+                )
+                + f"?selected-submissions={CustomFormPageSubmission.objects.first().id}&selected-submissions={CustomFormPageSubmission.objects.last().id}"
             )
         )
 
@@ -1362,9 +1383,11 @@ class TestDeleteCustomFormSubmission(WagtailTestUtils, TestCase):
         self.login(username="eventeditor", password="password")
 
         response = self.client.post(
-            reverse("wagtailforms:delete_submissions", args=(self.form_page.id,))
-            + "?selected-submissions={}".format(
-                CustomFormPageSubmission.objects.first().id
+            (
+                reverse(
+                    "wagtailforms:delete_submissions", args=(self.form_page.id,)
+                )
+                + f"?selected-submissions={CustomFormPageSubmission.objects.first().id}"
             )
         )
 
@@ -1473,8 +1496,8 @@ class TestFormsWithCustomSubmissionsList(WagtailTestUtils, TestCase):
                 page=self.form_page,
                 user=self.test_user_1,
                 form_data={
-                    "your_email": "foo-%s@bar.com" % i,
-                    "chocolate": "Chocolate No.%s" % i,
+                    "your_email": f"foo-{i}@bar.com",
+                    "chocolate": f"Chocolate No.{i}",
                     "your_excitement": self.choices[3],
                 },
             )
@@ -1521,7 +1544,7 @@ class TestFormsWithCustomSubmissionsList(WagtailTestUtils, TestCase):
         self.assertEqual(response.status_code, 200)
         data_lines = response.getvalue().decode().split("\n")
         self.assertIn(
-            'filename="%s-export' % self.form_page.slug,
+            f'filename="{self.form_page.slug}-export',
             response.get("Content-Disposition"),
         )
         self.assertEqual(
@@ -1601,8 +1624,8 @@ class TestFormsWithCustomFormBuilderSubmissionsList(WagtailTestUtils, TestCase):
             submission = FormSubmission.objects.create(
                 page=form_page,
                 form_data={
-                    "name": "John %s" % i,
-                    "device_ip_address": "192.0.2.%s" % i,
+                    "name": f"John {i}",
+                    "device_ip_address": f"192.0.2.{i}",
                 },
             )
             submission.save()

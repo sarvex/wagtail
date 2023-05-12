@@ -34,10 +34,7 @@ class InstagramOEmbedFinder(EmbedFinder):
         self.omitscript = omitscript
 
     def accept(self, url):
-        for pattern in self.INSTAGRAM_URL_PATTERNS:
-            if re.match(pattern, url):
-                return True
-        return False
+        return any(re.match(pattern, url) for pattern in self.INSTAGRAM_URL_PATTERNS)
 
     def find_embed(self, url, max_width=None, max_height=None):
         params = {"url": url, "format": "json"}
@@ -49,7 +46,7 @@ class InstagramOEmbedFinder(EmbedFinder):
             params["omitscript"] = "true"
 
         # Configure request
-        request = Request(self.INSTAGRAM_ENDPOINT + "?" + urlencode(params))
+        request = Request(f"{self.INSTAGRAM_ENDPOINT}?{urlencode(params)}")
         request.add_header("Authorization", f"Bearer {self.app_id}|{self.app_secret}")
 
         # Perform request
@@ -66,7 +63,7 @@ class InstagramOEmbedFinder(EmbedFinder):
 
         # Convert photos into HTML
         if oembed["type"] == "photo":
-            html = '<img src="%s" alt="">' % (oembed["url"],)
+            html = f'<img src="{oembed["url"]}" alt="">'
         else:
             html = oembed.get("html")
 

@@ -20,10 +20,10 @@ class Feature:
     @property
     def media(self):
         js = [versioned_static(js_file) for js_file in self.js]
-        css = {}
-        for media_type, css_files in self.css.items():
-            css[media_type] = [versioned_static(css_file) for css_file in css_files]
-
+        css = {
+            media_type: [versioned_static(css_file) for css_file in css_files]
+            for media_type, css_files in self.css.items()
+        }
         return Media(js=js, css=css)
 
 

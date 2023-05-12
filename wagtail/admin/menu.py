@@ -84,11 +84,7 @@ class Menu:
         # registered through hooks. We can't do this in __init__ because we can't rely on all hooks
         # modules to have been imported at the point that we create the admin_menu and
         # settings_menu instances
-        if self.initial_menu_items:
-            items = self.initial_menu_items.copy()
-        else:
-            items = []
-
+        items = self.initial_menu_items.copy() if self.initial_menu_items else []
         if self.register_hook_name:
             for fn in hooks.get_hooks(self.register_hook_name):
                 items.append(fn())
@@ -121,10 +117,10 @@ class Menu:
 
     def render_component(self, request):
         menu_items = self.menu_items_for_request(request)
-        rendered_menu_items = []
-        for item in sorted(menu_items, key=lambda i: i.order):
-            rendered_menu_items.append(item.render_component(request))
-        return rendered_menu_items
+        return [
+            item.render_component(request)
+            for item in sorted(menu_items, key=lambda i: i.order)
+        ]
 
 
 class SubmenuMenuItem(MenuItem):

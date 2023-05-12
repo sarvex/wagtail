@@ -12,9 +12,9 @@ def set_privacy(request, collection_id):
     if not collection_permission_policy.user_has_permission(request.user, "change"):
         raise PermissionDenied
 
-    # fetch restriction records in depth order so that ancestors appear first
-    restrictions = collection.get_view_restrictions().order_by("collection__depth")
-    if restrictions:
+    if restrictions := collection.get_view_restrictions().order_by(
+        "collection__depth"
+    ):
         restriction = restrictions[0]
         restriction_exists_on_ancestor = restriction.collection != collection
     else:
@@ -44,16 +44,14 @@ def set_privacy(request, collection_id):
                 },
             )
 
-    else:  # request is a GET
-        if not restriction_exists_on_ancestor:
-            if restriction:
-                form = CollectionViewRestrictionForm(instance=restriction)
-            else:
-                # no current view restrictions on this collection
-                form = CollectionViewRestrictionForm(
-                    initial={"restriction_type": "none"}
-                )
-
+    elif not restriction_exists_on_ancestor:
+        form = (
+            CollectionViewRestrictionForm(instance=restriction)
+            if restriction
+            else CollectionViewRestrictionForm(
+                initial={"restriction_type": "none"}
+            )
+        )
     if restriction_exists_on_ancestor:
         # display a message indicating that there is a restriction at ancestor level -
         # do not provide the form for setting up new restrictions

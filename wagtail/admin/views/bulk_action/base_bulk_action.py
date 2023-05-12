@@ -45,9 +45,7 @@ class BulkAction(ABC, FormView):
             self.model = model
         else:
             raise Exception(
-                "model {} is not among the specified list of models".format(
-                    model.__class__.__name__
-                )
+                f"model {model.__class__.__name__} is not among the specified list of models"
             )
 
     @classmethod

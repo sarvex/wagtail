@@ -42,13 +42,12 @@ class FieldsFilter(BaseFilterBackend):
                         value = field.target_field.get_prep_value(value)
                 except ValueError as e:
                     raise BadRequestError(
-                        "field filter error. '%s' is not a valid value for %s (%s)"
-                        % (value, field_name, str(e))
+                        f"field filter error. '{value}' is not a valid value for {field_name} ({str(e)})"
                     )
 
                 if isinstance(field, TaggableManager):
                     for tag in value.split(","):
-                        queryset = queryset.filter(**{field_name + "__name": tag})
+                        queryset = queryset.filter(**{f"{field_name}__name": tag})
 
                     # Stick a message on the queryset to indicate that tag filtering has been performed
                     # This will let the do_search method know that it must raise an error as searching
@@ -97,7 +96,7 @@ class OrderingFilter(BaseFilterBackend):
                 queryset = queryset.order_by(order_by)
             else:
                 # Unknown field
-                raise BadRequestError("cannot order by '%s' (unknown field)" % order_by)
+                raise BadRequestError(f"cannot order by '{order_by}' (unknown field)")
 
             # Reverse order
             if reverse_order:
@@ -112,9 +111,9 @@ class SearchFilter(BaseFilterBackend):
         This performs a full-text search on the result set
         Eg: ?search=James Joyce
         """
-        search_enabled = getattr(settings, "WAGTAILAPI_SEARCH_ENABLED", True)
-
         if "search" in request.GET:
+            search_enabled = getattr(settings, "WAGTAILAPI_SEARCH_ENABLED", True)
+
             if not search_enabled:
                 raise BadRequestError("search is disabled")
 
@@ -138,15 +137,11 @@ class SearchFilter(BaseFilterBackend):
                 )
             except FilterFieldError as e:
                 raise BadRequestError(
-                    "cannot filter by '{}' while searching (field is not indexed)".format(
-                        e.field_name
-                    )
+                    f"cannot filter by '{e.field_name}' while searching (field is not indexed)"
                 )
             except OrderByFieldError as e:
                 raise BadRequestError(
-                    "cannot order by '{}' while searching (field is not indexed)".format(
-                        e.field_name
-                    )
+                    f"cannot order by '{e.field_name}' while searching (field is not indexed)"
                 )
 
         return queryset

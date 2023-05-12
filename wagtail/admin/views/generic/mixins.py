@@ -92,10 +92,7 @@ class BeforeAfterHookMixin(HookResponseMixin):
         response = super().form_valid(form)
 
         hooks_result = self.run_after_hook()
-        if hooks_result is not None:
-            return hooks_result
-
-        return response
+        return hooks_result if hooks_result is not None else response
 
 
 class LocaleMixin:
@@ -114,8 +111,7 @@ class LocaleMixin:
         if hasattr(self, "object") and self.object:
             return self.object.locale
 
-        selected_locale = self.request.GET.get("locale")
-        if selected_locale:
+        if selected_locale := self.request.GET.get("locale"):
             return get_object_or_404(Locale, language_code=selected_locale)
         return Locale.get_default()
 
@@ -283,25 +279,22 @@ class CreateEditViewOptionalFeaturesMixin:
             if self.current_workflow_task:
                 return self.current_workflow_task.user_can_unlock(self.object, user)
 
-        # Check with base PermissionCheckedMixin logic
-        has_base_permission = super().user_has_permission(permission)
-        if has_base_permission:
+        if has_base_permission := super().user_has_permission(permission):
             return True
 
         # Allow access to the editor if the current workflow task allows it,
         # even if the user does not normally have edit access. Users with edit
         # permissions can always edit regardless what this method returns --
         # see Task.user_can_access_editor() for reference
-        if (
-            permission == "change"
-            and self.current_workflow_task
-            and self.current_workflow_task.user_can_access_editor(
-                self.object, self.request.user
+        return bool(
+            (
+                permission == "change"
+                and self.current_workflow_task
+                and self.current_workflow_task.user_can_access_editor(
+                    self.object, self.request.user
+                )
             )
-        ):
-            return True
-
-        return False
+        )
 
     def workflow_action_is_valid(self):
         if not self.current_workflow_task:
@@ -351,9 +344,7 @@ class CreateEditViewOptionalFeaturesMixin:
         return self.live_object
 
     def get_lock(self):
-        if not self.locking_enabled:
-            return None
-        return self.object.get_lock()
+        return None if not self.locking_enabled else self.object.get_lock()
 
     def get_lock_url(self):
         if not self.locking_enabled or not self.lock_url_name:
@@ -487,10 +478,7 @@ class CreateEditViewOptionalFeaturesMixin:
         self.new_revision.publish(user=self.request.user, skip_permission_checks=True)
 
         hook_response = self.run_hook("after_publish", self.request, self.object)
-        if hook_response is not None:
-            return hook_response
-
-        return None
+        return hook_response if hook_response is not None else None
 
     def submit_action(self):
         if (
@@ -528,8 +516,9 @@ class CreateEditViewOptionalFeaturesMixin:
         return None
 
     def run_action_method(self):
-        action_method = getattr(self, self.action.replace("-", "_") + "_action", None)
-        if action_method:
+        if action_method := getattr(
+            self, self.action.replace("-", "_") + "_action", None
+        ):
             return action_method()
         return None
 
@@ -545,10 +534,7 @@ class CreateEditViewOptionalFeaturesMixin:
         response = self.save_action()
 
         hook_response = self.run_after_hook()
-        if hook_response is not None:
-            return hook_response
-
-        return response
+        return hook_response if hook_response is not None else response
 
     def form_invalid(self, form):
         # Even if the object is locked due to not having permissions,
@@ -619,8 +605,7 @@ class CreateEditViewOptionalFeaturesMixin:
         if not self.lock or self.request.method != "GET":
             return context
 
-        lock_message = self.lock.get_message(self.request.user)
-        if lock_message:
+        if lock_message := self.lock.get_message(self.request.user):
             if user_can_unlock:
                 lock_message = format_html(
                     '{} <span class="buttons"><button type="button" class="button button-small button-secondary" data-action="w-action#post" data-controller="w-action" data-w-action-url-value="{}">{}</button></span>',
@@ -705,8 +690,7 @@ class RevisionsRevertMixin:
             "created_at": self.revision.created_at.strftime("%d %b %Y %H:%M"),
             "user": user_avatar,
         }
-        message = mark_safe(message_string % message_data)
-        return message
+        return mark_safe(message_string % message_data)
 
     def _add_warning_message(self):
         messages.warning(self.request, self.get_warning_message())

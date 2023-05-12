@@ -54,18 +54,16 @@ class Command(BaseCommand):
     ):
         fix_paths = options.get("full", False)
 
-        self.stdout.write("Checking %s tree for problems..." % model_name)
+        self.stdout.write(f"Checking {model_name} tree for problems...")
         (bad_alpha, bad_path, orphans, bad_depth, bad_numchild) = model.find_problems()
 
         if bad_depth:
             self.stdout.write(
-                "Incorrect depth value found for %s: %s"
-                % (model_name_plural, self.numberlist_to_string(bad_depth))
+                f"Incorrect depth value found for {model_name_plural}: {self.numberlist_to_string(bad_depth)}"
             )
         if bad_numchild:
             self.stdout.write(
-                "Incorrect numchild value found for %s: %s"
-                % (model_name_plural, self.numberlist_to_string(bad_numchild))
+                f"Incorrect numchild value found for {model_name_plural}: {self.numberlist_to_string(bad_numchild)}"
             )
 
         if orphans:
@@ -76,10 +74,7 @@ class Command(BaseCommand):
             orphan_paths = model.objects.filter(id__in=orphans).values_list(
                 "path", flat=True
             )
-            filter_conditions = []
-            for path in orphan_paths:
-                filter_conditions.append(Q(path__startswith=path))
-
+            filter_conditions = [Q(path__startswith=path) for path in orphan_paths]
             # combine filter_conditions into a single ORed condition
             final_filter = functools.reduce(operator.or_, filter_conditions)
 
@@ -89,13 +84,13 @@ class Command(BaseCommand):
             # trying to fix here.
             nodes_to_delete = models.query.QuerySet(model).filter(final_filter)
 
-            self.stdout.write("Orphaned %s found:" % model_name_plural)
+            self.stdout.write(f"Orphaned {model_name_plural} found:")
             for node in nodes_to_delete:
                 self.stdout.write("ID %d: %s" % (node.id, node))
             self.stdout.write("")
 
             if options.get("interactive", True):
-                yes_or_no = input("Delete these %s? [y/N] " % model_name_plural)
+                yes_or_no = input(f"Delete these {model_name_plural}? [y/N] ")
                 delete_orphans = yes_or_no.lower().startswith("y")
                 self.stdout.write("")
             else:
@@ -135,28 +130,23 @@ class Command(BaseCommand):
             self.stdout.write("Remaining problems (cannot fix automatically):")
             if bad_alpha:
                 self.stdout.write(
-                    "Invalid characters found in path for %s: %s"
-                    % (model_name_plural, self.numberlist_to_string(bad_alpha))
+                    f"Invalid characters found in path for {model_name_plural}: {self.numberlist_to_string(bad_alpha)}"
                 )
             if bad_path:
                 self.stdout.write(
-                    "Invalid path length found for %s: %s"
-                    % (model_name_plural, self.numberlist_to_string(bad_path))
+                    f"Invalid path length found for {model_name_plural}: {self.numberlist_to_string(bad_path)}"
                 )
             if orphans:
                 self.stdout.write(
-                    "Orphaned %s found: %s"
-                    % (model_name_plural, self.numberlist_to_string(orphans))
+                    f"Orphaned {model_name_plural} found: {self.numberlist_to_string(orphans)}"
                 )
             if bad_depth:
                 self.stdout.write(
-                    "Incorrect depth value found for %s: %s"
-                    % (model_name_plural, self.numberlist_to_string(bad_depth))
+                    f"Incorrect depth value found for {model_name_plural}: {self.numberlist_to_string(bad_depth)}"
                 )
             if bad_numchild:
                 self.stdout.write(
-                    "Incorrect numchild value found for %s: %s"
-                    % (model_name_plural, self.numberlist_to_string(bad_numchild))
+                    f"Incorrect numchild value found for {model_name_plural}: {self.numberlist_to_string(bad_numchild)}"
                 )
 
         elif any_problems_fixed:

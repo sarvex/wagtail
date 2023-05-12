@@ -40,8 +40,7 @@ def get_user_display_name(user):
     user.get_full_name() if implemented and non-empty, or user.get_username() otherwise.
     """
     try:
-        full_name = user.get_full_name().strip()
-        if full_name:
+        if full_name := user.get_full_name().strip():
             return full_name
     except AttributeError:
         pass

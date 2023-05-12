@@ -32,4 +32,4 @@ class ViewSet:
         """
         Returns the namespaced URL name for the given view.
         """
-        return self.name + ":" + view_name
+        return f"{self.name}:{view_name}"

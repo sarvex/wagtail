@@ -176,7 +176,7 @@ class FormMixin:
         super().__init__(*args, **kwargs)
         if not hasattr(self, "landing_page_template"):
             name, ext = os.path.splitext(self.template)
-            self.landing_page_template = name + "_landing" + ext
+            self.landing_page_template = f"{name}_landing{ext}"
 
     def get_form_fields(self):
         """
@@ -369,7 +369,7 @@ class EmailFormMixin(models.Model):
             elif isinstance(value, datetime.date):
                 value = date_format(value, settings.SHORT_DATE_FORMAT)
 
-            content.append("{}: {}".format(field.label, value))
+            content.append(f"{field.label}: {value}")
 
         return "\n".join(content)
 

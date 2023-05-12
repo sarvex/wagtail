@@ -86,8 +86,7 @@ class BaseImageChooseView(BaseChooseView):
         )
 
     def filter_object_list(self, objects):
-        tag_name = self.request.GET.get("tag")
-        if tag_name:
+        if tag_name := self.request.GET.get("tag"):
             objects = objects.filter(tags__name=tag_name)
 
         return super().filter_object_list(objects)
@@ -101,10 +100,7 @@ class BaseImageChooseView(BaseChooseView):
         collections = self.permission_policy.collections_user_has_permission_for(
             self.request.user, "choose"
         )
-        if len(collections) < 2:
-            return None
-
-        return collections
+        return None if len(collections) < 2 else collections
 
     def get(self, request):
         self.model = get_image_model()
@@ -186,32 +182,29 @@ class ImageUploadViewMixin(SelectFormatResponseMixin, CreateViewMixin):
         self.model = get_image_model()
         self.form = self.get_creation_form()
 
-        if self.form.is_valid():
-            image = self.save_form(self.form)
-
-            duplicates = find_image_duplicates(
-                image=image,
-                user=request.user,
-                permission_policy=permission_policy,
-            )
-            existing_image = duplicates.first()
-            if existing_image:
-                return self.render_duplicate_found_response(
-                    request, image, existing_image
-                )
-
-            if request.GET.get("select_format"):
-                insertion_form = ImageInsertionForm(
-                    initial={"alt_text": image.default_alt_text},
-                    prefix="image-chooser-insertion",
-                )
-                return self.render_select_format_response(image, insertion_form)
-            else:
-                # not specifying a format; return the image details now
-                return self.get_chosen_response(image)
-
-        else:  # form is invalid
+        if not self.form.is_valid():
             return self.get_reshow_creation_form_response()
+        image = self.save_form(self.form)
+
+        duplicates = find_image_duplicates(
+            image=image,
+            user=request.user,
+            permission_policy=permission_policy,
+        )
+        if existing_image := duplicates.first():
+            return self.render_duplicate_found_response(
+                request, image, existing_image
+            )
+
+        if not request.GET.get("select_format"):
+            # not specifying a format; return the image details now
+            return self.get_chosen_response(image)
+
+        insertion_form = ImageInsertionForm(
+            initial={"alt_text": image.default_alt_text},
+            prefix="image-chooser-insertion",
+        )
+        return self.render_select_format_response(image, insertion_form)
 
     def render_duplicate_found_response(self, request, new_image, existing_image):
         next_step_url = (
@@ -265,7 +258,7 @@ class ImageSelectFormatView(SelectFormatResponseMixin, ImageChosenResponseMixin,
     def get(self, request, image_id):
         image = get_object_or_404(self.model, id=image_id)
         initial = {"alt_text": image.default_alt_text}
-        initial.update(request.GET.dict())
+        initial |= request.GET.dict()
         # If you edit an existing image, and there is no alt text, ensure that
         # "image is decorative" is ticked when you open the form
         initial["image_is_decorative"] = initial["alt_text"] == ""

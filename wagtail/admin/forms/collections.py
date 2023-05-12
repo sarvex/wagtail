@@ -64,10 +64,7 @@ class CollectionChoiceField(forms.ModelChoiceField):
 
     def _set_queryset(self, queryset):
         min_depth = self.queryset.aggregate(Min("depth"))["depth__min"]
-        if min_depth is None:
-            self._indentation_start_depth = 2
-        else:
-            self._indentation_start_depth = min_depth + 1
+        self._indentation_start_depth = 2 if min_depth is None else min_depth + 1
 
     def label_from_instance(self, obj):
         return obj.get_indented_name(self._indentation_start_depth, html=True)
@@ -101,7 +98,7 @@ class CollectionForm(forms.ModelForm):
         This methods enforces rule #3 when we are editing an existing collection.
         """
         parent = self.cleaned_data["parent"]
-        if not self.instance._state.adding and not parent.pk == self.initial.get(
+        if not self.instance._state.adding and parent.pk != self.initial.get(
             "parent"
         ):
             old_descendants = list(
@@ -146,8 +143,7 @@ class BaseCollectionMemberForm(forms.ModelForm):
 
         if len(self.collections) == 0:
             raise Exception(
-                "Cannot construct %s for a user with no collection permissions"
-                % type(self)
+                f"Cannot construct {type(self)} for a user with no collection permissions"
             )
         elif len(self.collections) == 1:
             # don't show collection field if only one collection is available
@@ -194,19 +190,16 @@ class BaseGroupCollectionMemberPermissionFormSet(forms.BaseFormSet):
 
         self.instance = instance
 
-        initial_data = []
-
-        for collection, collection_permissions in groupby(
-            full_collection_permissions,
-            lambda cp: cp.collection,
-        ):
-            initial_data.append(
-                {
-                    "collection": collection,
-                    "permissions": [cp.permission for cp in collection_permissions],
-                }
+        initial_data = [
+            {
+                "collection": collection,
+                "permissions": [cp.permission for cp in collection_permissions],
+            }
+            for collection, collection_permissions in groupby(
+                full_collection_permissions,
+                lambda cp: cp.collection,
             )
-
+        ]
         super().__init__(data, files, initial=initial_data, prefix=prefix)
         for form in self.forms:
             form.fields["DELETE"].widget = forms.HiddenInput()
@@ -306,7 +299,9 @@ def collection_member_permission_formset_factory(
     ).select_related("content_type")
 
     if default_prefix is None:
-        default_prefix = "%s_permissions" % model._meta.model_name
+        default_prefix = f"{model._meta.model_name}_permissions"
+
+
 
     class PermissionMultipleChoiceField(forms.ModelMultipleChoiceField):
         """
@@ -315,10 +310,15 @@ def collection_member_permission_formset_factory(
         """
 
         def label_from_instance(self, obj):
-            for codename, short_label, long_label in permission_types:
-                if codename == obj.codename:
-                    return long_label
-            return str(obj)
+            return next(
+                (
+                    long_label
+                    for codename, short_label, long_label in permission_types
+                    if codename == obj.codename
+                ),
+                str(obj),
+            )
+
 
     class CollectionMemberPermissionsForm(forms.Form):
         """
@@ -339,7 +339,7 @@ def collection_member_permission_formset_factory(
         )
 
     GroupCollectionMemberPermissionFormSet = type(
-        str("GroupCollectionMemberPermissionFormSet"),
+        "GroupCollectionMemberPermissionFormSet",
         (BaseGroupCollectionMemberPermissionFormSet,),
         {
             "permission_types": permission_types,

@@ -209,7 +209,7 @@ class TestAccountSectionUtilsMixin:
             for panelset in response.context["panels_by_tab"].values()
             for panel in panelset
         }
-        self.assertIn(name, panels, "Panel %s not active in response" % name)
+        self.assertIn(name, panels, f"Panel {name} not active in response")
 
     def assertPanelNotActive(self, response, name):
         panels = {
@@ -217,7 +217,7 @@ class TestAccountSectionUtilsMixin:
             for panelset in response.context["panels_by_tab"].values()
             for panel in panelset
         }
-        self.assertNotIn(name, panels, "Panel %s active in response" % name)
+        self.assertNotIn(name, panels, f"Panel {name} active in response")
 
     def post_form(self, extra_post_data):
         post_data = {
@@ -232,7 +232,7 @@ class TestAccountSectionUtilsMixin:
             "locale-current_time_zone": "Europe/London",
             "theme-theme": "dark",
         }
-        post_data.update(extra_post_data)
+        post_data |= extra_post_data
         return self.client.post(reverse("wagtailadmin_account"), post_data)
 
 

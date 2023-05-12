@@ -25,13 +25,13 @@ class ViewSetRegistry:
         urlpatterns = []
 
         for viewset in self.viewsets:
-            vs_urlpatterns = viewset.get_urlpatterns()
-
-            if vs_urlpatterns:
+            if vs_urlpatterns := viewset.get_urlpatterns():
                 urlpatterns.append(
                     re_path(
-                        r"^{}/".format(viewset.url_prefix),
-                        include((vs_urlpatterns, viewset.name), namespace=viewset.name),
+                        f"^{viewset.url_prefix}/",
+                        include(
+                            (vs_urlpatterns, viewset.name), namespace=viewset.name
+                        ),
                     )
                 )
 

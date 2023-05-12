@@ -88,10 +88,7 @@ class ListElementHandler:
     def handle_starttag(self, name, attrs, state, contentstate):
         state.push()
 
-        if state.list_item_type is None:
-            # this is not nested in another list => depth remains unchanged
-            pass
-        else:
+        if state.list_item_type is not None:
             # start the next nesting level
             state.list_depth += 1
 
@@ -137,9 +134,9 @@ class ListItemElementHandler(BlockElementHandler):
         pass  # skip setting self.block_type
 
     def create_block(self, name, attrs, state, contentstate):
-        assert state.list_item_type is not None, (
-            "%s element found outside of an enclosing list element" % name
-        )
+        assert (
+            state.list_item_type is not None
+        ), f"{name} element found outside of an enclosing list element"
         return Block(
             state.list_item_type, depth=state.list_depth, key=attrs.get(BLOCK_KEY_NAME)
         )
@@ -388,10 +385,9 @@ class HtmlToContentStateHandler(HTMLParser):
         if not self.open_elements:
             return  # avoid a pop from an empty list if we have an extra end tag
         expected_name, element_handler = self.open_elements.pop()
-        assert name == expected_name, "Unmatched tags: expected %s, got %s" % (
-            expected_name,
-            name,
-        )
+        assert (
+            name == expected_name
+        ), f"Unmatched tags: expected {expected_name}, got {name}"
         if element_handler:
             element_handler.handle_endtag(name, self.state, self.contentstate)
 
@@ -425,7 +421,7 @@ class HtmlToContentStateHandler(HTMLParser):
                 self.state.leading_whitespace == FORCE_WHITESPACE
                 and not content.startswith(" ")
             ):
-                content = " " + content
+                content = f" {content}"
             if content.endswith(" "):
                 # don't output trailing whitespace yet, because we want to discard it if the end
                 # of the block follows. Instead, we'll set leading_whitespace = force so that

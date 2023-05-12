@@ -94,8 +94,8 @@ class BasicLock(BaseLock):
         title = get_latest_str(self.object)
 
         if self.object.locked_by_id == user.pk:
-            if self.object.locked_at:
-                return format_html(
+            return (
+                format_html(
                     # nosemgrep: translation-no-new-style-formatting (new-style only w/ format_html)
                     _(
                         "<b>'{title}' was locked</b> by <b>you</b> on <b>{datetime}</b>."
@@ -103,31 +103,30 @@ class BasicLock(BaseLock):
                     title=title,
                     datetime=self.object.locked_at.strftime("%d %b %Y %H:%M"),
                 )
-
-            else:
-                return format_html(
+                if self.object.locked_at
+                else format_html(
                     # nosemgrep: translation-no-new-style-formatting (new-style only w/ format_html)
                     _("<b>'{title}' is locked</b> by <b>you</b>."),
                     title=title,
                 )
+            )
+        if self.object.locked_by and self.object.locked_at:
+            return format_html(
+                # nosemgrep: translation-no-new-style-formatting (new-style only w/ format_html)
+                _(
+                    "<b>'{title}' was locked</b> by <b>{user}</b> on <b>{datetime}</b>."
+                ),
+                title=title,
+                user=get_user_display_name(self.object.locked_by),
+                datetime=self.object.locked_at.strftime("%d %b %Y %H:%M"),
+            )
         else:
-            if self.object.locked_by and self.object.locked_at:
-                return format_html(
-                    # nosemgrep: translation-no-new-style-formatting (new-style only w/ format_html)
-                    _(
-                        "<b>'{title}' was locked</b> by <b>{user}</b> on <b>{datetime}</b>."
-                    ),
-                    title=title,
-                    user=get_user_display_name(self.object.locked_by),
-                    datetime=self.object.locked_at.strftime("%d %b %Y %H:%M"),
-                )
-            else:
-                # Object was probably locked with an old version of Wagtail, or a script
-                return format_html(
-                    # nosemgrep: translation-no-new-style-formatting (new-style only w/ format_html)
-                    _("<b>'{title}' is locked</b>."),
-                    title=title,
-                )
+            # Object was probably locked with an old version of Wagtail, or a script
+            return format_html(
+                # nosemgrep: translation-no-new-style-formatting (new-style only w/ format_html)
+                _("<b>'{title}' is locked</b>."),
+                title=title,
+            )
 
     def get_locked_by(self, user):
         if self.object.locked_by_id == user.pk:
@@ -196,17 +195,13 @@ class WorkflowLock(BaseLock):
                 % {"model_name": self.model_name}
             )
 
-            return mark_safe(workflow_info + " " + reviewers_info)
+            return mark_safe(f"{workflow_info} {reviewers_info}")
 
     def get_icon(self, user, can_lock=False):
-        if can_lock:
-            return "lock-open"
-        return super().get_icon(user)
+        return "lock-open" if can_lock else super().get_icon(user)
 
     def get_locked_by(self, user, can_lock=False):
-        if can_lock:
-            return _("Unlocked")
-        return _("Locked by workflow")
+        return _("Unlocked") if can_lock else _("Locked by workflow")
 
     def get_description(self, user, can_lock=False):
         if can_lock:

@@ -19,10 +19,9 @@ def sitemap(request, sitemaps=None, **kwargs):
 
 
 def prepare_sitemaps(request, sitemaps):
-    initialised_sitemaps = {}
-    for name, sitemap_cls in sitemaps.items():
-        if inspect.isclass(sitemap_cls) and issubclass(sitemap_cls, Sitemap):
-            initialised_sitemaps[name] = sitemap_cls(request)
-        else:
-            initialised_sitemaps[name] = sitemap_cls
-    return initialised_sitemaps
+    return {
+        name: sitemap_cls(request)
+        if inspect.isclass(sitemap_cls) and issubclass(sitemap_cls, Sitemap)
+        else sitemap_cls
+        for name, sitemap_cls in sitemaps.items()
+    }

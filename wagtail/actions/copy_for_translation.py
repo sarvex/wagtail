@@ -110,7 +110,7 @@ class CopyPageForTranslationAction:
 
             # Append language code to slug as the new page
             # will be created in the same section as the existing one
-            slug += "-" + locale.language_code
+            slug += f"-{locale.language_code}"
 
         # Find available slug for new page
         slug = find_available_slug(translated_parent, slug)
@@ -123,29 +123,28 @@ class CopyPageForTranslationAction:
                 reset_translation_key=False,
             )
 
-        else:
-            # Update locale on translatable child objects as well
-            def process_child_object(
-                original_page, page_copy, child_relation, child_object
-            ):
-                from wagtail.models import TranslatableMixin
+        # Update locale on translatable child objects as well
+        def process_child_object(
+            original_page, page_copy, child_relation, child_object
+        ):
+            from wagtail.models import TranslatableMixin
 
-                if isinstance(child_object, TranslatableMixin):
-                    child_object.locale = locale
+            if isinstance(child_object, TranslatableMixin):
+                child_object.locale = locale
 
-            return page.copy(
-                to=translated_parent,
-                update_attrs={
-                    "locale": locale,
-                    "slug": slug,
-                },
-                copy_revisions=False,
-                keep_live=False,
-                reset_translation_key=False,
-                process_child_object=process_child_object,
-                exclude_fields=exclude_fields,
-                log_action="wagtail.copy_for_translation",
-            )
+        return page.copy(
+            to=translated_parent,
+            update_attrs={
+                "locale": locale,
+                "slug": slug,
+            },
+            copy_revisions=False,
+            keep_live=False,
+            reset_translation_key=False,
+            process_child_object=process_child_object,
+            exclude_fields=exclude_fields,
+            log_action="wagtail.copy_for_translation",
+        )
 
     def execute(self, skip_permission_checks=False):
         self.check(skip_permission_checks=skip_permission_checks)
@@ -218,8 +217,6 @@ class CopyForTranslationAction:
     def execute(self, skip_permission_checks=False):
         self.check(skip_permission_checks=skip_permission_checks)
 
-        translated_object = self._copy_for_translation(
+        return self._copy_for_translation(
             self.object, self.locale, self.exclude_fields
         )
-
-        return translated_object

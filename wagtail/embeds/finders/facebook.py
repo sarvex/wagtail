@@ -53,13 +53,9 @@ class FacebookOEmbedFinder(EmbedFinder):
         self._endpoints = {}
 
         for provider in [self.facebook_video, self.facebook_post]:
-            patterns = []
-
             endpoint = provider["endpoint"].replace("{format}", "json")
 
-            for url in provider["urls"]:
-                patterns.append(re.compile(url))
-
+            patterns = [re.compile(url) for url in provider["urls"]]
             self._endpoints[endpoint] = patterns
 
     def _get_endpoint(self, url):
@@ -86,7 +82,7 @@ class FacebookOEmbedFinder(EmbedFinder):
             params["omitscript"] = "true"
 
         # Configure request
-        request = Request(endpoint + "?" + urlencode(params))
+        request = Request(f"{endpoint}?{urlencode(params)}")
         request.add_header("Authorization", f"Bearer {self.app_id}|{self.app_secret}")
 
         # Perform request

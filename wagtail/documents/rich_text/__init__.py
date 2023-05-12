@@ -18,7 +18,7 @@ class DocumentLinkHandler(LinkHandler):
     def expand_db_attributes(cls, attrs):
         try:
             doc = cls.get_instance(attrs)
-            return '<a href="%s">' % escape(doc.url)
+            return f'<a href="{escape(doc.url)}">'
         except (ObjectDoesNotExist, KeyError):
             return "<a>"
 

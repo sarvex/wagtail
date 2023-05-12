@@ -112,9 +112,9 @@ class WorkflowPageForm(forms.ModelForm):
             pass
 
     def save(self, commit=False):
-        page = self.cleaned_data["page"]
-
         if commit:
+            page = self.cleaned_data["page"]
+
             WorkflowPage.objects.update_or_create(
                 page=page,
                 defaults={"workflow": self.cleaned_data["workflow"]},

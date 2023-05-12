@@ -12,9 +12,7 @@ class BulkActionRegistry:
             for action_class in hooks.get_hooks("register_bulk_action"):
                 if not issubclass(action_class, BulkAction):
                     raise Exception(
-                        "{} is not a subclass of {}".format(
-                            action_class.__name__, BulkAction.__name__
-                        )
+                        f"{action_class.__name__} is not a subclass of {BulkAction.__name__}"
                     )
                 for model in action_class.get_models():
                     self.actions.setdefault(model._meta.app_label, {})

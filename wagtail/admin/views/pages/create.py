@@ -88,20 +88,18 @@ class CreateView(TemplateResponseMixin, ContextMixin, HookResponseMixin, View):
         if not self.page_class.can_create_at(self.parent_page):
             raise PermissionDenied
 
-        response = self.run_hook(
+        if response := self.run_hook(
             "before_create_page", self.request, self.parent_page, self.page_class
-        )
-        if response:
+        ):
             return response
 
         self.locale = self.parent_page.locale
 
         # If the parent page is the root page. The user may specify any locale they like
         if self.parent_page.is_root():
-            selected_locale = request.GET.get("locale", None) or request.POST.get(
+            if selected_locale := request.GET.get(
                 "locale", None
-            )
-            if selected_locale:
+            ) or request.POST.get("locale", None):
                 self.locale = get_object_or_404(Locale, language_code=selected_locale)
 
         self.page = self.page_class(owner=self.request.user)
@@ -183,8 +181,7 @@ class CreateView(TemplateResponseMixin, ContextMixin, HookResponseMixin, View):
             % {"page_title": self.page.get_admin_display_title()},
         )
 
-        response = self.run_hook("after_create_page", self.request, self.page)
-        if response:
+        if response := self.run_hook("after_create_page", self.request, self.page):
             return response
 
         # remain on edit page for further edits
@@ -203,9 +200,9 @@ class CreateView(TemplateResponseMixin, ContextMixin, HookResponseMixin, View):
         self.subscription.page = self.page
         self.subscription.save()
 
-        # Publish
-        response = self.run_hook("before_publish_page", self.request, self.page)
-        if response:
+        if response := self.run_hook(
+            "before_publish_page", self.request, self.page
+        ):
             return response
 
         revision.publish(user=self.request.user)
@@ -213,8 +210,9 @@ class CreateView(TemplateResponseMixin, ContextMixin, HookResponseMixin, View):
         # get a fresh copy so that any changes coming from revision.publish() are passed on
         self.page.refresh_from_db()
 
-        response = self.run_hook("after_publish_page", self.request, self.page)
-        if response:
+        if response := self.run_hook(
+            "after_publish_page", self.request, self.page
+        ):
             return response
 
         # Notification
@@ -237,8 +235,7 @@ class CreateView(TemplateResponseMixin, ContextMixin, HookResponseMixin, View):
                 buttons=buttons,
             )
 
-        response = self.run_hook("after_create_page", self.request, self.page)
-        if response:
+        if response := self.run_hook("after_create_page", self.request, self.page):
             return response
 
         return self.redirect_away()
@@ -275,8 +272,7 @@ class CreateView(TemplateResponseMixin, ContextMixin, HookResponseMixin, View):
             buttons=buttons,
         )
 
-        response = self.run_hook("after_create_page", self.request, self.page)
-        if response:
+        if response := self.run_hook("after_create_page", self.request, self.page):
             return response
 
         return self.redirect_away()
@@ -293,7 +289,7 @@ class CreateView(TemplateResponseMixin, ContextMixin, HookResponseMixin, View):
         target_url = reverse("wagtailadmin_pages:edit", args=[self.page.id])
         if self.next_url:
             # Ensure the 'next' url is passed through again if present
-            target_url += "?next=%s" % quote(self.next_url)
+            target_url += f"?next={quote(self.next_url)}"
         return redirect(target_url)
 
     def form_invalid(self, form):

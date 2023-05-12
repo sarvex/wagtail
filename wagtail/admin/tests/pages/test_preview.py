@@ -137,9 +137,7 @@ class TestPreview(WagtailTestUtils, TestCase):
             args=("tests", "eventpage", self.home_page.id),
         )
 
-        preview_session_key = "wagtail-preview-tests-eventpage-{}".format(
-            self.home_page.id
-        )
+        preview_session_key = f"wagtail-preview-tests-eventpage-{self.home_page.id}"
         self.assertNotIn(preview_session_key, self.client.session)
 
         response = self.client.get(preview_url)
@@ -164,9 +162,7 @@ class TestPreview(WagtailTestUtils, TestCase):
             args=("tests", "eventpage", self.home_page.id),
         )
 
-        preview_session_key = "wagtail-preview-tests-eventpage-{}".format(
-            self.home_page.id
-        )
+        preview_session_key = f"wagtail-preview-tests-eventpage-{self.home_page.id}"
         self.assertNotIn(preview_session_key, self.client.session)
 
         response = self.client.post(preview_url, {**self.post_data, "title": ""})
@@ -212,9 +208,7 @@ class TestPreview(WagtailTestUtils, TestCase):
         )
 
         # Check the user can refresh the preview
-        preview_session_key = "wagtail-preview-tests-eventpage-{}".format(
-            self.home_page.id
-        )
+        preview_session_key = f"wagtail-preview-tests-eventpage-{self.home_page.id}"
         self.assertIn(preview_session_key, self.client.session)
 
         response = self.client.get(preview_url)
@@ -240,7 +234,7 @@ class TestPreview(WagtailTestUtils, TestCase):
         )
 
         # Check the user can refresh the preview
-        preview_session_key = "wagtail-preview-{}".format(self.event_page.id)
+        preview_session_key = f"wagtail-preview-{self.event_page.id}"
         self.assertIn(preview_session_key, self.client.session)
 
         response = self.client.get(preview_url)
@@ -274,7 +268,7 @@ class TestPreview(WagtailTestUtils, TestCase):
         )
 
         # Check the user can still see the preview with the last valid data
-        preview_session_key = "wagtail-preview-{}".format(self.event_page.id)
+        preview_session_key = f"wagtail-preview-{self.event_page.id}"
         self.assertIn(preview_session_key, self.client.session)
 
         response = self.client.get(preview_url)
@@ -317,9 +311,7 @@ class TestPreview(WagtailTestUtils, TestCase):
             self.assertEqual(response.status_code, 200)
 
     def test_preview_on_create_clear_preview_data(self):
-        preview_session_key = "wagtail-preview-tests-eventpage-{}".format(
-            self.home_page.id
-        )
+        preview_session_key = f"wagtail-preview-tests-eventpage-{self.home_page.id}"
 
         # Set a fake preview session data for the page
         self.client.session[preview_session_key] = "test data"
@@ -355,7 +347,7 @@ class TestPreview(WagtailTestUtils, TestCase):
         )
 
     def test_preview_on_edit_clear_preview_data(self):
-        preview_session_key = "wagtail-preview-{}".format(self.event_page.id)
+        preview_session_key = f"wagtail-preview-{self.event_page.id}"
 
         # Set a fake preview session data for the page
         self.client.session[preview_session_key] = "test data"
@@ -441,7 +433,7 @@ class TestEnablePreview(WagtailTestUtils, TestCase):
     def test_show_preview_panel_on_create_with_single_mode(self):
         create_url = self.get_url_on_add("add", self.single)
         preview_url = self.get_url_on_add("preview_on_add", self.single)
-        iframe_url = preview_url + "?in_preview_panel=true&mode="
+        iframe_url = f"{preview_url}?in_preview_panel=true&mode="
         response = self.client.get(create_url)
 
         self.assertEqual(response.status_code, 200)
@@ -449,7 +441,7 @@ class TestEnablePreview(WagtailTestUtils, TestCase):
         # Should show the preview panel
         self.assertContains(response, 'data-side-panel-toggle="preview"')
         self.assertContains(response, 'data-side-panel="preview"')
-        self.assertContains(response, 'data-action="%s"' % preview_url)
+        self.assertContains(response, f'data-action="{preview_url}"')
 
         # Should show the iframe
         self.assertContains(
@@ -466,7 +458,7 @@ class TestEnablePreview(WagtailTestUtils, TestCase):
     def test_show_preview_panel_on_create_with_multiple_modes(self):
         create_url = self.get_url_on_add("add", self.multiple)
         preview_url = self.get_url_on_add("preview_on_add", self.multiple)
-        iframe_url = preview_url + "?in_preview_panel=true&mode=alt%231"
+        iframe_url = f"{preview_url}?in_preview_panel=true&mode=alt%231"
         response = self.client.get(create_url)
 
         self.assertEqual(response.status_code, 200)
@@ -474,7 +466,7 @@ class TestEnablePreview(WagtailTestUtils, TestCase):
         # Should show the preview panel
         self.assertContains(response, 'data-side-panel-toggle="preview"')
         self.assertContains(response, 'data-side-panel="preview"')
-        self.assertContains(response, 'data-action="%s"' % preview_url)
+        self.assertContains(response, f'data-action="{preview_url}"')
 
         # Should show the iframe with the default mode set and correctly quoted
         self.assertContains(
@@ -497,7 +489,7 @@ class TestEnablePreview(WagtailTestUtils, TestCase):
     def test_show_preview_panel_on_edit_with_single_mode(self):
         edit_url = self.get_url_on_edit("edit", self.single)
         preview_url = self.get_url_on_edit("preview_on_edit", self.single)
-        iframe_url = preview_url + "?in_preview_panel=true&mode="
+        iframe_url = f"{preview_url}?in_preview_panel=true&mode="
         response = self.client.get(edit_url)
 
         self.assertEqual(response.status_code, 200)
@@ -505,7 +497,7 @@ class TestEnablePreview(WagtailTestUtils, TestCase):
         # Should show the preview panel
         self.assertContains(response, 'data-side-panel-toggle="preview"')
         self.assertContains(response, 'data-side-panel="preview"')
-        self.assertContains(response, 'data-action="%s"' % preview_url)
+        self.assertContains(response, f'data-action="{preview_url}"')
 
         # Should show the iframe
         self.assertContains(
@@ -522,7 +514,7 @@ class TestEnablePreview(WagtailTestUtils, TestCase):
     def test_show_preview_panel_on_edit_with_multiple_modes(self):
         edit_url = self.get_url_on_edit("edit", self.multiple)
         preview_url = self.get_url_on_edit("preview_on_edit", self.multiple)
-        iframe_url = preview_url + "?in_preview_panel=true&mode=alt%231"
+        iframe_url = f"{preview_url}?in_preview_panel=true&mode=alt%231"
         response = self.client.get(edit_url)
 
         self.assertEqual(response.status_code, 200)
@@ -530,7 +522,7 @@ class TestEnablePreview(WagtailTestUtils, TestCase):
         # Should show the preview panel
         self.assertContains(response, 'data-side-panel-toggle="preview"')
         self.assertContains(response, 'data-side-panel="preview"')
-        self.assertContains(response, 'data-action="%s"' % preview_url)
+        self.assertContains(response, f'data-action="{preview_url}"')
 
         # Should show the iframe with the default mode set and correctly quoted
         self.assertContains(
@@ -591,7 +583,7 @@ class TestDisablePreviewButton(WagtailTestUtils, TestCase):
         )
         self.assertNotContains(response, 'data-side-panel-toggle="preview"')
         self.assertNotContains(response, 'data-side-panel="preview"')
-        self.assertNotContains(response, 'data-action="%s"' % preview_url)
+        self.assertNotContains(response, f'data-action="{preview_url}"')
 
     def test_disable_preview_on_edit(self):
         stream_page = StreamPage(title="stream page", body=[("text", "hello")])
@@ -608,7 +600,7 @@ class TestDisablePreviewButton(WagtailTestUtils, TestCase):
         )
         self.assertNotContains(response, 'data-side-panel-toggle="preview"')
         self.assertNotContains(response, 'data-side-panel="preview"')
-        self.assertNotContains(response, 'data-action="%s"' % preview_url)
+        self.assertNotContains(response, f'data-action="{preview_url}"')
 
     def test_disable_preview_on_revisions_list(self):
         stream_page = StreamPage(title="stream page", body=[("text", "hello")])
@@ -638,4 +630,4 @@ class TestDisablePreviewButton(WagtailTestUtils, TestCase):
             "wagtailadmin_pages:preview_for_moderation", args=(latest_revision.id,)
         )
         self.assertNotContains(response, '<li class="preview">')
-        self.assertNotContains(response, 'data-action="%s"' % preview_url)
+        self.assertNotContains(response, f'data-action="{preview_url}"')

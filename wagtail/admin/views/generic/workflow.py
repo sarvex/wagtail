@@ -33,8 +33,7 @@ class BaseWorkflowFormView(BaseObjectMixin, View):
         self.form_class = self.get_form_class()
 
     def get_redirect_url(self):
-        next_url = get_valid_next_url_from_request(self.request)
-        if next_url:
+        if next_url := get_valid_next_url_from_request(self.request):
             return next_url
         return reverse(self.redirect_url_name, args=(quote(self.object.pk),))
 

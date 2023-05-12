@@ -45,9 +45,7 @@ class StructBlockValidationError(ValidationError):
         # All representations will be normalised to a dict of ValidationError instances,
         # which is also the preferred format for the original argument to be in.
         self.block_errors = {}
-        if block_errors is None:
-            pass
-        else:
+        if block_errors is not None:
             for name, val in block_errors.items():
                 if isinstance(val, ErrorList):
                     self.block_errors[name] = val.as_data()[0]
@@ -139,14 +137,14 @@ class BaseStructBlock(Block):
     def value_from_datadict(self, data, files, prefix):
         return self._to_struct_value(
             [
-                (name, block.value_from_datadict(data, files, "%s-%s" % (prefix, name)))
+                (name, block.value_from_datadict(data, files, f"{prefix}-{name}"))
                 for name, block in self.child_blocks.items()
             ]
         )
 
     def value_omitted_from_data(self, data, files, prefix):
         return all(
-            block.value_omitted_from_data(data, files, "%s-%s" % (prefix, name))
+            block.value_omitted_from_data(data, files, f"{prefix}-{name}")
             for name, block in self.child_blocks.items()
         )
 
@@ -318,7 +316,7 @@ class BaseStructBlock(Block):
                     (
                         name,
                         PlaceholderBoundBlock(
-                            block, value.get(name), prefix="%s-%s" % (prefix, name)
+                            block, value.get(name), prefix=f"{prefix}-{name}"
                         ),
                     )
                     for name, block in self.child_blocks.items()
@@ -357,8 +355,7 @@ class StructBlockAdapter(Adapter):
             "classname": block.meta.form_classname,
         }
 
-        help_text = getattr(block.meta, "help_text", None)
-        if help_text:
+        if help_text := getattr(block.meta, "help_text", None):
             meta["helpText"] = help_text
             meta["helpIcon"] = get_help_icon()
 

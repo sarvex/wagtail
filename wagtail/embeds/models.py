@@ -47,9 +47,8 @@ class Embed(models.Model):
 
     @property
     def ratio_css(self):
-        ratio = self.ratio
-        if ratio:
-            return str(ratio * 100) + "%"
+        if ratio := self.ratio:
+            return f"{str(ratio * 100)}%"
 
     @property
     def is_responsive(self):

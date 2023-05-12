@@ -61,8 +61,7 @@ def send_mail(subject, message, recipient_list, from_email=None, **kwargs):
     mail = EmailMultiAlternatives(
         subject, message, from_email, recipient_list, **multi_alt_kwargs
     )
-    html_message = kwargs.get("html_message", None)
-    if html_message:
+    if html_message := kwargs.get("html_message", None):
         mail.attach_alternative(html_message, "text/html")
 
     return mail.send()
@@ -98,7 +97,8 @@ def send_notification(recipient_users, notification, extra_context):
         if recipient.is_active
         and recipient.email
         and getattr(
-            UserProfile.get_for_user(recipient), notification + "_notifications"
+            UserProfile.get_for_user(recipient),
+            f"{notification}_notifications",
         )
     ]
 
@@ -107,15 +107,15 @@ def send_notification(recipient_users, notification, extra_context):
         return True
 
     # Get template
-    template_subject = "wagtailadmin/notifications/" + notification + "_subject.txt"
-    template_text = "wagtailadmin/notifications/" + notification + ".txt"
-    template_html = "wagtailadmin/notifications/" + notification + ".html"
+    template_subject = f"wagtailadmin/notifications/{notification}_subject.txt"
+    template_text = f"wagtailadmin/notifications/{notification}.txt"
+    template_html = f"wagtailadmin/notifications/{notification}.html"
 
     # Common context to template
     context = {
         "settings": settings,
     }
-    context.update(extra_context)
+    context |= extra_context
 
     connection = get_connection()
 
@@ -177,7 +177,7 @@ class Notifier:
         return set()
 
     def get_template_base_prefix(self, instance, **kwargs):
-        return camelcase_to_underscore(type(instance).__name__) + "_"
+        return f"{camelcase_to_underscore(type(instance).__name__)}_"
 
     def get_context(self, instance, **kwargs):
         return {"settings": settings}
@@ -232,7 +232,7 @@ class EmailNotificationMixin:
             and recipient.email
             and getattr(
                 UserProfile.get_for_user(recipient),
-                self.notification + "_notifications",
+                f"{self.notification}_notifications",
             )
         }
 
@@ -329,12 +329,8 @@ class WorkflowStateApprovalEmailNotifier(BaseWorkflowStateEmailNotifier):
 
     def get_recipient_users(self, workflow_state, **kwargs):
         triggering_user = kwargs.get("user", None)
-        recipients = {}
         requested_by = workflow_state.requested_by
-        if requested_by != triggering_user:
-            recipients = {requested_by}
-
-        return recipients
+        return {requested_by} if requested_by != triggering_user else {}
 
 
 class WorkflowStateRejectionEmailNotifier(BaseWorkflowStateEmailNotifier):
@@ -344,12 +340,8 @@ class WorkflowStateRejectionEmailNotifier(BaseWorkflowStateEmailNotifier):
 
     def get_recipient_users(self, workflow_state, **kwargs):
         triggering_user = kwargs.get("user", None)
-        recipients = {}
         requested_by = workflow_state.requested_by
-        if requested_by != triggering_user:
-            recipients = {requested_by}
-
-        return recipients
+        return {requested_by} if requested_by != triggering_user else {}
 
     def get_context(self, workflow_state, **kwargs):
         context = super().get_context(workflow_state, **kwargs)
@@ -391,11 +383,10 @@ class BaseGroupApprovalTaskStateEmailNotifier(EmailNotificationMixin, Notifier):
         super().__init__((TaskState,))
 
     def can_handle(self, instance, **kwargs):
-        if super().can_handle(instance, **kwargs) and isinstance(
-            instance.task.specific, GroupApprovalTask
-        ):
-            return True
-        return False
+        return bool(
+            super().can_handle(instance, **kwargs)
+            and isinstance(instance.task.specific, GroupApprovalTask)
+        )
 
     def get_context(self, task_state, **kwargs):
         context = super().get_context(task_state, **kwargs)

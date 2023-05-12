@@ -103,8 +103,7 @@ urlpatterns = [
 
 # Import additional urlpatterns from any apps that define a register_admin_urls hook
 for fn in hooks.get_hooks("register_admin_urls"):
-    urls = fn()
-    if urls:
+    if urls := fn():
         urlpatterns += urls
 
 

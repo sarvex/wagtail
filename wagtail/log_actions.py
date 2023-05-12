@@ -38,10 +38,7 @@ class LogContext:
 
     def __init__(self, user=None, generate_uuid=True):
         self.user = user
-        if generate_uuid:
-            self.uuid = uuid.uuid4()
-        else:
-            self.uuid = None
+        self.uuid = uuid.uuid4() if generate_uuid else None
 
     def __enter__(self):
         self._old_log_context = getattr(_active, "value", None)

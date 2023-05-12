@@ -46,9 +46,8 @@ class DraftailRichTextArea(widgets.HiddenInput):
         self.converter = ContentstateConverter(self.features)
 
         default_attrs = {"data-draftail-input": True}
-        attrs = kwargs.get("attrs")
-        if attrs:
-            default_attrs.update(attrs)
+        if attrs := kwargs.get("attrs"):
+            default_attrs |= attrs
         kwargs["attrs"] = default_attrs
 
         super().__init__(*args, **kwargs)

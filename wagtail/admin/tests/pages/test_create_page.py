@@ -48,7 +48,7 @@ class TestPageCreation(WagtailTestUtils, TestCase):
         target_url = reverse(
             "wagtailadmin_pages:add", args=("tests", "simplepage", self.root_page.id)
         )
-        self.assertContains(response, 'href="%s"' % target_url)
+        self.assertContains(response, f'href="{target_url}"')
         self.assertContains(response, "A simple page description")
         # List of available page types should not contain pages with is_creatable = False
         self.assertNotContains(response, "MTI base page")
@@ -159,7 +159,7 @@ class TestPageCreation(WagtailTestUtils, TestCase):
         target_url = reverse(
             "wagtailadmin_pages:add", args=("tests", "simplepage", self.root_page.id)
         )
-        self.assertContains(response, 'href="%s?next=/admin/users/"' % target_url)
+        self.assertContains(response, f'href="{target_url}?next=/admin/users/"')
 
     def test_create_simplepage(self):
         response = self.client.get(

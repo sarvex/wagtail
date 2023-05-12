@@ -60,14 +60,11 @@ class AddView(BaseAddView):
 
     def get_edit_object_response_data(self):
         data = super().get_edit_object_response_data()
-        duplicates = find_image_duplicates(
+        if duplicates := find_image_duplicates(
             image=self.object,
             user=self.request.user,
             permission_policy=self.permission_policy,
-        )
-        if not duplicates:
-            data.update(duplicate=False)
-        else:
+        ):
             data.update(
                 duplicate=True,
                 confirm_duplicate_upload=self.get_confirm_duplicate_upload_response(
@@ -75,6 +72,8 @@ class AddView(BaseAddView):
                 ),
             )
 
+        else:
+            data.update(duplicate=False)
         return data
 
     def save_object(self, form):

@@ -80,25 +80,22 @@ def breadcrumbs(
 ):
     user = context["request"].user
 
-    # find the closest common ancestor of the pages that this user has direct explore permission
-    # (i.e. add/edit/publish/lock) over; this will be the root of the breadcrumb
-    cca = get_explorable_root_page(user)
-    if not cca:
+    if cca := get_explorable_root_page(user):
+        return {
+            "pages": page.get_ancestors(inclusive=include_self)
+            .descendant_of(cca, inclusive=True)
+            .specific(),
+            "current_page": page,
+            "is_expanded": is_expanded,
+            "page_perms": page_perms,
+            "querystring_value": querystring_value or "",
+            "trailing_breadcrumb_title": trailing_breadcrumb_title,  # Only used in collapsible breadcrumb templates
+            "url_name": url_name,
+            "url_root_name": url_root_name,
+            "classname": classname,
+        }
+    else:
         return {"pages": Page.objects.none()}
-
-    return {
-        "pages": page.get_ancestors(inclusive=include_self)
-        .descendant_of(cca, inclusive=True)
-        .specific(),
-        "current_page": page,
-        "is_expanded": is_expanded,
-        "page_perms": page_perms,
-        "querystring_value": querystring_value or "",
-        "trailing_breadcrumb_title": trailing_breadcrumb_title,  # Only used in collapsible breadcrumb templates
-        "url_name": url_name,
-        "url_root_name": url_root_name,
-        "classname": classname,
-    }
 
 
 @register.inclusion_tag("wagtailadmin/shared/search_other.html", takes_context=True)
@@ -115,9 +112,9 @@ def search_other(context, current=None):
 def ellipsistrim(value, max_length):
     if len(value) > max_length:
         truncd_val = value[:max_length]
-        if not len(value) == (max_length + 1) and value[max_length + 1] != " ":
+        if len(value) != max_length + 1 and value[max_length + 1] != " ":
             truncd_val = truncd_val[: truncd_val.rfind(" ")]
-        return truncd_val + "…"
+        return f"{truncd_val}…"
     return value
 
 
@@ -264,10 +261,10 @@ def test_page_is_public(context, page):
         )
 
     is_private = any(
-        [
-            page.path.startswith(restricted_path)
-            for restricted_path in context["request"].all_page_view_restriction_paths
-        ]
+        page.path.startswith(restricted_path)
+        for restricted_path in context[
+            "request"
+        ].all_page_view_restriction_paths
     )
 
     return not is_private
@@ -308,7 +305,7 @@ class EscapeScriptNode(template.Node):
 
     @classmethod
     def handle(cls, parser, token):
-        nodelist = parser.parse(("end" + EscapeScriptNode.TAG_NAME,))
+        nodelist = parser.parse((f"end{EscapeScriptNode.TAG_NAME}", ))
         parser.delete_first_token()
         return cls(nodelist)
 
@@ -378,7 +375,7 @@ def querystring(context, **kwargs):
             # Set the key otherwise
             querydict[key] = str(value)
 
-    return "?" + querydict.urlencode()
+    return f"?{querydict.urlencode()}"
 
 
 @register.simple_tag(takes_context=True)
@@ -449,7 +446,7 @@ def table_header_label(
 
     if ordering is None:
         ordering = context.get(sort_context_var)
-    reverse_sort_field = "-%s" % sort_field
+    reverse_sort_field = f"-{sort_field}"
 
     if ordering == sort_field:
         # currently ordering forwards on this column; link should change to reverse ordering
@@ -678,7 +675,7 @@ def message_level_tag(message):
 def message_tags(message):
     level_tag = message_level_tag(message)
     if message.extra_tags and level_tag:
-        return message.extra_tags + " " + level_tag
+        return f"{message.extra_tags} {level_tag}"
     elif message.extra_tags:
         return message.extra_tags
     elif level_tag:
@@ -895,28 +892,29 @@ def timesince_last_update(
     """
     # translation usage below is intentionally verbose to be easier to work with translations
 
-    if last_update.date() == datetime.today().date():
+    if last_update.date() == datetime.now().date():
         if timezone.is_aware(last_update):
             time_str = timezone.localtime(last_update).strftime("%H:%M")
         else:
             time_str = last_update.strftime("%H:%M")
 
         if show_time_prefix:
-            if user_display_name:
-                return _("at %(time)s by %(user_display_name)s") % {
+            return (
+                _("at %(time)s by %(user_display_name)s")
+                % {
                     "time": time_str,
                     "user_display_name": user_display_name,
                 }
-            else:
-                return _("at %(time)s") % {"time": time_str}
+                if user_display_name
+                else _("at %(time)s") % {"time": time_str}
+            )
+        if user_display_name:
+            return _("%(time)s by %(user_display_name)s") % {
+                "time": time_str,
+                "user_display_name": user_display_name,
+            }
         else:
-            if user_display_name:
-                return _("%(time)s by %(user_display_name)s") % {
-                    "time": time_str,
-                    "user_display_name": user_display_name,
-                }
-            else:
-                return time_str
+            return time_str
     else:
         if use_shorthand:
             # Note: Duplicate code in timesince_simple()
@@ -980,16 +978,13 @@ def locale_label_from_id(locale_id):
 def sidebar_collapsed(context):
     request = context.get("request")
     collapsed = request.COOKIES.get("wagtail_sidebar_collapsed", "0")
-    if collapsed == "0":
-        return False
-    return True
+    return collapsed != "0"
 
 
 @register.simple_tag(takes_context=True)
 def sidebar_props(context):
     request = context["request"]
-    search_areas = admin_search_areas.search_items_for_request(request)
-    if search_areas:
+    if search_areas := admin_search_areas.search_items_for_request(request):
         search_area = search_areas[0]
     else:
         search_area = None
@@ -1042,12 +1037,10 @@ def wagtail_config(context):
         "WAGTAIL_AUTO_UPDATE_PREVIEW": True,
         "WAGTAIL_AUTO_UPDATE_PREVIEW_INTERVAL": 500,
     }
-    config.update(
-        {
-            option: getattr(settings, option, default)
-            for option, default in default_settings.items()
-        }
-    )
+    config |= {
+        option: getattr(settings, option, default)
+        for option, default in default_settings.items()
+    }
 
     return config
 
@@ -1207,10 +1200,7 @@ class DialogNode(BlockInclusionNode):
             "success": "circle-check",
         }
 
-        message_status = context.get("message_status")
-
-        # If there is a message status then determine which icon to use.
-        if message_status:
+        if message_status := context.get("message_status"):
             context["message_icon_name"] = message_icon_name[message_status]
 
         return context

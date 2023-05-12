@@ -209,9 +209,9 @@ class ChangePasswordPanel(BaseSettingsPanel):
         if self.request.method == "POST":
             bind_form = any(
                 [
-                    self.request.POST.get(self.name + "-old_password"),
-                    self.request.POST.get(self.name + "-new_password1"),
-                    self.request.POST.get(self.name + "-new_password2"),
+                    self.request.POST.get(f"{self.name}-old_password"),
+                    self.request.POST.get(f"{self.name}-new_password1"),
+                    self.request.POST.get(f"{self.name}-new_password2"),
                 ]
             )
 
@@ -260,28 +260,28 @@ def account(request):
 
     panel_forms = [panel.get_form() for panel in panels]
 
-    if request.method == "POST":
+    if request.method == "POST" and all(
+        form.is_valid() or not form.is_bound for form in panel_forms
+    ):
+        with transaction.atomic():
+            for form in panel_forms:
+                if form.is_bound:
+                    form.save()
 
-        if all(form.is_valid() or not form.is_bound for form in panel_forms):
-            with transaction.atomic():
-                for form in panel_forms:
-                    if form.is_bound:
-                        form.save()
+        log(user, "wagtail.edit")
 
-            log(user, "wagtail.edit")
+        # Prevent a password change from logging this user out
+        update_session_auth_hash(request, user)
 
-            # Prevent a password change from logging this user out
-            update_session_auth_hash(request, user)
+        # Override the language when creating the success message
+        # If the user has changed their language in this request, the message should
+        # be in the new language, not the existing one
+        with override(profile.get_preferred_language()):
+            messages.success(
+                request, _("Your account settings have been changed successfully!")
+            )
 
-            # Override the language when creating the success message
-            # If the user has changed their language in this request, the message should
-            # be in the new language, not the existing one
-            with override(profile.get_preferred_language()):
-                messages.success(
-                    request, _("Your account settings have been changed successfully!")
-                )
-
-            return redirect("wagtailadmin_account")
+        return redirect("wagtailadmin_account")
 
     media = Media()
     for form in panel_forms:
@@ -290,8 +290,7 @@ def account(request):
     # Menu items
     menu_items = []
     for fn in hooks.get_hooks("register_account_menu_item"):
-        item = fn(request)
-        if item:
+        if item := fn(request):
             menu_items.append(item)
 
     return TemplateResponse(
@@ -369,8 +368,7 @@ class LoginView(auth_views.LoginView):
     def form_valid(self, form):
         response = super().form_valid(form)
 
-        remember = form.cleaned_data.get("remember")
-        if remember:
+        if remember := form.cleaned_data.get("remember"):
             self.request.session.set_expiry(settings.SESSION_COOKIE_AGE)
         else:
             self.request.session.set_expiry(0)

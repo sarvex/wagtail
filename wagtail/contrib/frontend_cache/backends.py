@@ -42,7 +42,7 @@ class HTTPBackend(BaseBackend):
 
         # Append port to host if it is set in the original URL
         if url_parsed.port:
-            host += ":" + str(url_parsed.port)
+            host += f":{str(url_parsed.port)}"
 
         request = PurgeRequest(
             url=urlunparse(
@@ -57,7 +57,7 @@ class HTTPBackend(BaseBackend):
             ),
             headers={
                 "Host": host,
-                "User-Agent": "Wagtail-frontendcache/" + __version__,
+                "User-Agent": f"Wagtail-frontendcache/{__version__}",
             },
         )
 
@@ -115,7 +115,7 @@ class CloudflareBackend(BaseBackend):
             headers = {"Content-Type": "application/json"}
 
             if self.cloudflare_token:
-                headers["Authorization"] = "Bearer {}".format(self.cloudflare_token)
+                headers["Authorization"] = f"Bearer {self.cloudflare_token}"
             else:
                 headers["X-Auth-Email"] = self.cloudflare_email
                 headers["X-Auth-Key"] = self.cloudflare_api_key
@@ -265,8 +265,7 @@ class AzureBaseBackend(BaseBackend):
         Use credentials object set by user. If not set, use the one configured
         in the current environment.
         """
-        user_credentials = self._credentials
-        if user_credentials:
+        if user_credentials := self._credentials:
             return user_credentials
         return self._get_default_credentials()
 
@@ -288,8 +287,7 @@ class AzureBaseBackend(BaseBackend):
         Use subscription ID set in the user configuration. If not set, try to
         retrieve one from Azure directly.
         """
-        user_subscription_id = self._subscription_id
-        if user_subscription_id:
+        if user_subscription_id := self._subscription_id:
             return user_subscription_id
         return self._get_default_subscription_id()
 

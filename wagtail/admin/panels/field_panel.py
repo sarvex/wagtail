@@ -52,8 +52,7 @@ class FieldPanel(Panel):
             if field.choices:
                 return compare.ChoiceFieldComparison
 
-            comparison_class = compare.comparison_class_registry.get(field)
-            if comparison_class:
+            if comparison_class := compare.comparison_class_registry.get(field):
                 return comparison_class
 
             if field.is_relation:
@@ -83,11 +82,7 @@ class FieldPanel(Panel):
         return self.field_name
 
     def __repr__(self):
-        return "<%s '%s' with model=%s>" % (
-            self.__class__.__name__,
-            self.field_name,
-            self.model,
-        )
+        return f"<{self.__class__.__name__} '{self.field_name}' with model={self.model}>"
 
     class BoundPanel(Panel.BoundPanel):
         template_name = "wagtailadmin/panels/field_panel.html"
@@ -136,14 +131,11 @@ class FieldPanel(Panel):
                 # this field is missing from the form
                 return False
 
-            if (
-                self.panel.permission
-                and self.request
-                and not self.request.user.has_perm(self.panel.permission)
-            ):
-                return False
-
-            return True
+            return bool(
+                not self.panel.permission
+                or not self.request
+                or self.request.user.has_perm(self.panel.permission)
+            )
 
         def is_required(self):
             return self.bound_field.field.required
@@ -208,8 +200,8 @@ class FieldPanel(Panel):
 
             widget_described_by_ids = []
             help_text = self.bound_field.help_text
-            help_text_id = "%s-helptext" % self.prefix
-            error_message_id = "%s-errors" % self.prefix
+            help_text_id = f"{self.prefix}-helptext"
+            error_message_id = f"{self.prefix}-errors"
 
             if help_text:
                 widget_described_by_ids.append(help_text_id)
@@ -272,11 +264,4 @@ class FieldPanel(Panel):
             return []
 
         def __repr__(self):
-            return "<%s '%s' with model=%s instance=%s request=%s form=%s>" % (
-                self.__class__.__name__,
-                self.field_name,
-                self.panel.model,
-                self.instance,
-                self.request,
-                self.form.__class__.__name__,
-            )
+            return f"<{self.__class__.__name__} '{self.field_name}' with model={self.panel.model} instance={self.instance} request={self.request} form={self.form.__class__.__name__}>"

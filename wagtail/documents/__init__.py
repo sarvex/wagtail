@@ -28,6 +28,5 @@ def get_document_model():
         )
     except LookupError:
         raise ImproperlyConfigured(
-            "WAGTAILDOCS_DOCUMENT_MODEL refers to model '%s' that has not been installed"
-            % model_string
+            f"WAGTAILDOCS_DOCUMENT_MODEL refers to model '{model_string}' that has not been installed"
         )

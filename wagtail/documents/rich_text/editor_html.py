@@ -24,7 +24,7 @@ class DocumentLinkHandler:
         except Document.DoesNotExist:
             # Preserve the ID attribute for troubleshooting purposes, even though it
             # points to a missing document
-            return '<a data-linktype="document" data-id="%s">' % attrs["id"]
+            return f'<a data-linktype="document" data-id="{attrs["id"]}">'
         except KeyError:
             return '<a data-linktype="document">'
 

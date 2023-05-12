@@ -144,13 +144,7 @@ class SubmitSnippetTranslationView(SubmitTranslationView):
         return object
 
     def get_success_url(self, translated_snippet=None):
-        pk = self.kwargs["pk"]
-
-        if translated_snippet:
-            # If the editor chose a single locale to translate to, redirect to
-            # the newly translated snippet's edit view.
-            pk = translated_snippet.pk
-
+        pk = translated_snippet.pk if translated_snippet else self.kwargs["pk"]
         return reverse(self.object.snippet_viewset.get_url_name("edit"), args=[pk])
 
     def get_success_message(self, locales):

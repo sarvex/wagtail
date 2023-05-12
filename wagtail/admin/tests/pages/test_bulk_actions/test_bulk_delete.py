@@ -79,14 +79,16 @@ class TestBulkDelete(WagtailTestUtils, TestCase):
 
         html = response.content.decode()
         for child_page in self.pages_to_be_deleted:
-            # check if the pages to be deleted and number of descendant pages are displayed
-            needle = "<li>"
-            needle += '<a href="{edit_page_url}" target="_blank" rel="noreferrer">{page_title}</a>'.format(
-                edit_page_url=reverse("wagtailadmin_pages:edit", args=[child_page.id]),
-                page_title=child_page.title,
+            needle = (
+                "<li>"
+                + '<a href="{edit_page_url}" target="_blank" rel="noreferrer">{page_title}</a>'.format(
+                    edit_page_url=reverse(
+                        "wagtailadmin_pages:edit", args=[child_page.id]
+                    ),
+                    page_title=child_page.title,
+                )
             )
-            descendants = len(self.grandchildren_pages.get(child_page, []))
-            if descendants:
+            if descendants := len(self.grandchildren_pages.get(child_page, [])):
                 needle += "<p>"
                 if descendants == 1:
                     needle += "This will also delete one more subpage."
@@ -135,9 +137,7 @@ class TestBulkDelete(WagtailTestUtils, TestCase):
             )
 
         self.assertTagInHTML(
-            """<form action="{}" method="POST"></form>""".format(self.url),
-            html,
-            count=0,
+            f"""<form action="{self.url}" method="POST"></form>""", html, count=0
         )
 
     def test_bulk_delete_post(self):

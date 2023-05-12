@@ -230,16 +230,7 @@ class EditView(View):
             user=request.user,
         )
 
-        if form.is_valid():
-            self.save_object(form)
-
-            return JsonResponse(
-                {
-                    "success": True,
-                    self.context_object_id_name: self.object.pk,
-                }
-            )
-        else:
+        if not form.is_valid():
             return JsonResponse(
                 {
                     "success": False,
@@ -260,6 +251,14 @@ class EditView(View):
                     ),
                 }
             )
+        self.save_object(form)
+
+        return JsonResponse(
+            {
+                "success": True,
+                self.context_object_id_name: self.object.pk,
+            }
+        )
 
 
 class DeleteView(View):
@@ -334,18 +333,7 @@ class CreateFromUploadView(View):
             user=request.user,
         )
 
-        if form.is_valid():
-            self.save_object(form)
-            self.upload.file.delete()
-            self.upload.delete()
-
-            return JsonResponse(
-                {
-                    "success": True,
-                    self.context_object_id_name: self.object.id,
-                }
-            )
-        else:
+        if not form.is_valid():
             return JsonResponse(
                 {
                     "success": False,
@@ -365,6 +353,16 @@ class CreateFromUploadView(View):
                     ),
                 }
             )
+        self.save_object(form)
+        self.upload.file.delete()
+        self.upload.delete()
+
+        return JsonResponse(
+            {
+                "success": True,
+                self.context_object_id_name: self.object.id,
+            }
+        )
 
 
 class DeleteUploadView(View):

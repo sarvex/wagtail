@@ -95,25 +95,24 @@ def delete(request, page_id):
             + "?describe_on_delete=1",
             "usage_count": usage.count(),
             "is_protected": usage.is_protected,
-            # if the number of pages ( child pages + current page) exceeds this limit, then confirm before delete.
             "confirm_before_delete": (descendant_count + 1)
-            >= getattr(settings, "WAGTAILADMIN_UNSAFE_PAGE_DELETION_LIMIT", 10),
+            >= getattr(
+                settings, "WAGTAILADMIN_UNSAFE_PAGE_DELETION_LIMIT", 10
+            ),
             "wagtail_site_name": wagtail_site_name,
-            # note that while pages_to_delete may contain a mix of translated pages
-            # and aliases, we count the "translations" only, as aliases are similar
-            # to symlinks, so they should just follow the source
             "translation_count": len(
                 [
                     translation.id
                     for translation in pages_to_delete
-                    if not translation.alias_of_id and translation.id != page.id
+                    if not translation.alias_of_id
+                    and translation.id != page.id
                 ]
             ),
             "translation_descendant_count": sum(
-                [
-                    translation.get_descendants().filter(alias_of__isnull=True).count()
-                    for translation in pages_to_delete
-                ]
+                translation.get_descendants()
+                .filter(alias_of__isnull=True)
+                .count()
+                for translation in pages_to_delete
             ),
         },
     )

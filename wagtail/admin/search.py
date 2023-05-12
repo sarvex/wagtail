@@ -23,10 +23,7 @@ class SearchArea(metaclass=MediaDefiningClass):
         self.name = name or slugify(str(label))
         self.order = order
 
-        if attrs:
-            self.attr_string = flatatt(attrs)
-        else:
-            self.attr_string = ""
+        self.attr_string = flatatt(attrs) if attrs else ""
 
     def __lt__(self, other):
         return (self.order, self.label) < (other.order, other.label)
@@ -95,19 +92,15 @@ class Search:
 
         # Get query parameter
         form = SearchForm(request.GET)
-        query = ""
-        if form.is_valid():
-            query = form.cleaned_data["q"]
-
+        query = form.cleaned_data["q"] if form.is_valid() else ""
         # provide a hook for modifying the search area, if construct_hook_name has been set
         if self.construct_hook_name:
             for fn in hooks.get_hooks(self.construct_hook_name):
                 fn(request, search_areas)
 
-        rendered_search_areas = []
-        for item in search_areas:
-            rendered_search_areas.append(item.render_html(request, query, current))
-
+        rendered_search_areas = [
+            item.render_html(request, query, current) for item in search_areas
+        ]
         return mark_safe("".join(rendered_search_areas))
 
 

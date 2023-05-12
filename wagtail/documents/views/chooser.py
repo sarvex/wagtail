@@ -86,10 +86,7 @@ class BaseDocumentChooseView(BaseChooseView):
         collections = self.permission_policy.collections_user_has_permission_for(
             self.request.user, "choose"
         )
-        if len(collections) < 2:
-            return None
-
-        return collections
+        return None if len(collections) < 2 else collections
 
     @property
     def columns(self):

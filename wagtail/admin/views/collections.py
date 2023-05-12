@@ -74,15 +74,14 @@ class Edit(EditView):
         """
         if user.is_active and user.is_superuser:
             return True
-        else:
-            permissions = self.permission_policy._get_permission_objects_for_actions(
-                ["add", "edit", "delete"]
-            )
-            return not GroupCollectionPermission.objects.filter(
-                group__user=user,
-                permission__in=permissions,
-                collection=instance,
-            ).exists()
+        permissions = self.permission_policy._get_permission_objects_for_actions(
+            ["add", "edit", "delete"]
+        )
+        return not GroupCollectionPermission.objects.filter(
+            group__user=user,
+            permission__in=permissions,
+            collection=instance,
+        ).exists()
 
     def get_queryset(self):
         return self.permission_policy.instances_user_has_permission_for(
@@ -163,9 +162,7 @@ class Delete(DeleteView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        collection_contents = self.get_collection_contents()
-
-        if collection_contents:
+        if collection_contents := self.get_collection_contents():
             # collection is non-empty; render the 'not allowed to delete' response
             self.template_name = "wagtailadmin/collections/delete_not_empty.html"
             context["collection_contents"] = collection_contents
@@ -174,9 +171,7 @@ class Delete(DeleteView):
 
     def post(self, request, pk):
         self.object = get_object_or_404(self.get_queryset(), id=pk)
-        collection_contents = self.get_collection_contents()
-
-        if collection_contents:
+        if collection_contents := self.get_collection_contents():
             # collection is non-empty; refuse to delete it
             return HttpResponseForbidden()
 

@@ -91,8 +91,7 @@ class BaseListingView(TemplateView):
 
         # Filter by collection
         self.current_collection = None
-        collection_id = self.request.GET.get("collection_id")
-        if collection_id:
+        if collection_id := self.request.GET.get("collection_id"):
             try:
                 self.current_collection = Collection.objects.get(id=collection_id)
                 images = images.filter(collection=self.current_collection)
@@ -124,9 +123,8 @@ class BaseListingView(TemplateView):
         images = paginator.get_page(self.request.GET.get("p"))
 
         next_url = reverse("wagtailimages:index")
-        request_query_string = self.request.META.get("QUERY_STRING")
-        if request_query_string:
-            next_url += "?" + request_query_string
+        if request_query_string := self.request.META.get("QUERY_STRING"):
+            next_url += f"?{request_query_string}"
 
         context.update(
             {
@@ -222,21 +220,19 @@ def edit(request, image_id):
     except NoReverseMatch:
         url_generator_enabled = False
 
-    if image.is_stored_locally():
-        # Give error if image file doesn't exist
-        if not os.path.isfile(image.file.path):
-            messages.error(
-                request,
-                _(
-                    "The source image file could not be found. Please change the source or delete the image."
-                )
-                % {"image_title": image.title},
-                buttons=[
-                    messages.button(
-                        reverse("wagtailimages:delete", args=(image.id,)), _("Delete")
-                    )
-                ],
+    if image.is_stored_locally() and not os.path.isfile(image.file.path):
+        messages.error(
+            request,
+            _(
+                "The source image file could not be found. Please change the source or delete the image."
             )
+            % {"image_title": image.title},
+            buttons=[
+                messages.button(
+                    reverse("wagtailimages:delete", args=(image.id,)), _("Delete")
+                )
+            ],
+        )
 
     try:
         filesize = image.get_file_size()
@@ -332,11 +328,13 @@ def preview(request, image_id, filter_spec):
     try:
         response = HttpResponse()
         image = Filter(spec=filter_spec).run(image, response)
-        response["Content-Type"] = "image/" + image.format_name
+        response["Content-Type"] = f"image/{image.format_name}"
         return response
     except InvalidFilterSpecError:
         return HttpResponse(
-            "Invalid filter spec: " + filter_spec, content_type="text/plain", status=400
+            f"Invalid filter spec: {filter_spec}",
+            content_type="text/plain",
+            status=400,
         )
 
 

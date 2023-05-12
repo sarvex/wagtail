@@ -86,7 +86,7 @@ class BaseTypedTableBlock(Block):
                 self.child_blocks[name] = block
 
     def value_from_datadict(self, data, files, prefix):
-        column_count = int(data["%s-column-count" % prefix])
+        column_count = int(data[f"{prefix}-column-count"])
         columns = [
             {
                 "id": i,
@@ -101,7 +101,7 @@ class BaseTypedTableBlock(Block):
         for col in columns:
             col["block"] = self.child_blocks[col["type"]]
 
-        row_count = int(data["%s-row-count" % prefix])
+        row_count = int(data[f"{prefix}-row-count"])
         rows = [
             {
                 "id": row_index,
@@ -201,32 +201,30 @@ class BaseTypedTableBlock(Block):
             }
 
     def clean(self, table):
-        if table:
-            # a dict where each key is a row index, and the value is a dict of errors on that row keyed by column index
-            cell_errors = {}
-            cleaned_rows = []
-            for row_index, row in enumerate(table.row_data):
-                row_errors = {}
-                row_data = []
-                for col_index, column in enumerate(table.columns):
-                    val = row["values"][col_index]
-                    try:
-                        row_data.append(column["block"].clean(val))
-                    except ValidationError as e:
-                        row_errors[col_index] = e
-
-                if row_errors:
-                    cell_errors[row_index] = row_errors
-                else:
-                    cleaned_rows.append({"values": row_data})
-
-            if cell_errors:
-                raise TypedTableBlockValidationError(cell_errors=cell_errors)
-            else:
-                return TypedTable(columns=table.columns, row_data=cleaned_rows)
-
-        else:
+        if not table:
             return TypedTable(columns=[], row_data=[])
+        # a dict where each key is a row index, and the value is a dict of errors on that row keyed by column index
+        cell_errors = {}
+        cleaned_rows = []
+        for row_index, row in enumerate(table.row_data):
+            row_errors = {}
+            row_data = []
+            for col_index, column in enumerate(table.columns):
+                val = row["values"][col_index]
+                try:
+                    row_data.append(column["block"].clean(val))
+                except ValidationError as e:
+                    row_errors[col_index] = e
+
+            if row_errors:
+                cell_errors[row_index] = row_errors
+            else:
+                cleaned_rows.append({"values": row_data})
+
+        if cell_errors:
+            raise TypedTableBlockValidationError(cell_errors=cell_errors)
+        else:
+            return TypedTable(columns=table.columns, row_data=cleaned_rows)
 
     def deconstruct(self):
         """
@@ -251,10 +249,7 @@ class BaseTypedTableBlock(Block):
         return errors
 
     def render_basic(self, value, context=None):
-        if value:
-            return value.render_as_block(context)
-        else:
-            return ""
+        return value.render_as_block(context) if value else ""
 
     class Meta:
         default = None
@@ -284,8 +279,7 @@ class TypedTableBlockAdapter(Adapter):
             },
         }
 
-        help_text = getattr(block.meta, "help_text", None)
-        if help_text:
+        if help_text := getattr(block.meta, "help_text", None):
             meta["helpText"] = help_text
             meta["helpIcon"] = get_help_icon()
 

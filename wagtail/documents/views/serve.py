@@ -58,15 +58,8 @@ def serve(request, document_id, document_filename):
 
     serve_method = getattr(settings, "WAGTAILDOCS_SERVE_METHOD", None)
 
-    # If no serve method has been specified, select an appropriate default for the storage backend:
-    # redirect for remote storages (i.e. ones that provide a url but not a local path) and
-    # serve_view for all other cases
     if serve_method is None:
-        if direct_url and not local_path:
-            serve_method = "redirect"
-        else:
-            serve_method = "serve_view"
-
+        serve_method = "redirect" if direct_url and not local_path else "serve_view"
     if serve_method in ("redirect", "direct") and direct_url:
         # Serve the file by redirecting to the URL provided by the underlying storage;
         # this saves the cost of delivering the file via Python.

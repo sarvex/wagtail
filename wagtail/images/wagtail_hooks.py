@@ -180,8 +180,11 @@ def register_image_permissions_panel():
 
 @hooks.register("describe_collection_contents")
 def describe_collection_docs(collection):
-    images_count = get_image_model().objects.filter(collection=collection).count()
-    if images_count:
+    if (
+        images_count := get_image_model()
+        .objects.filter(collection=collection)
+        .count()
+    ):
         url = reverse("wagtailimages:index") + ("?collection_id=%d" % collection.id)
         return {
             "count": images_count,

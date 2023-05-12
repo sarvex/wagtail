@@ -44,13 +44,9 @@ class SafePaginateListView(ListView):
         try:
             page_number = int(page_request)
         except ValueError:
-            if page_request == "last":
-                page_number = paginator.num_pages
-            else:
-                page_number = 0
+            page_number = paginator.num_pages if page_request == "last" else 0
         try:
-            if page_number > paginator.num_pages:
-                page_number = paginator.num_pages  # page out of range, show last page
+            page_number = min(page_number, paginator.num_pages)
             page = paginator.page(page_number)
         except InvalidPage:
             page = paginator.page(1)
@@ -74,8 +70,7 @@ class FormPagesListView(SafePaginateListView):
         queryset = get_forms_for_user(self.request.user)
         if self.locale:
             queryset = queryset.filter(locale=self.locale)
-        ordering = self.get_ordering()
-        if ordering:
+        if ordering := self.get_ordering():
             if isinstance(ordering, str):
                 ordering = (ordering,)
             queryset = queryset.order_by(*ordering)
@@ -100,7 +95,10 @@ class FormPagesListView(SafePaginateListView):
             locale_context = {
                 "locale": self.locale,
                 "translations": [
-                    {"locale": locale, "url": url + "?locale=" + locale.language_code}
+                    {
+                        "locale": locale,
+                        "url": f"{url}?locale={locale.language_code}",
+                    }
                     for locale in Locale.objects.all().exclude(pk=self.locale.pk)
                 ],
             }
@@ -216,8 +214,7 @@ class SubmissionsListView(SpreadsheetExportMixin, SafePaginateListView):
         if filtering and isinstance(filtering, dict):
             queryset = queryset.filter(**filtering)
 
-        ordering = self.get_ordering()
-        if ordering:
+        if ordering := self.get_ordering():
             if isinstance(ordering, str):
                 ordering = (ordering,)
             queryset = queryset.order_by(*ordering)
@@ -226,9 +223,7 @@ class SubmissionsListView(SpreadsheetExportMixin, SafePaginateListView):
 
     def get_paginate_by(self, queryset):
         """Get the number of items to paginate by, or ``None`` for no pagination"""
-        if self.is_export:
-            return None
-        return self.paginate_by
+        return None if self.is_export else self.paginate_by
 
     def get_validated_ordering(self):
         """Return a dict of field names with ordering labels if ordering is valid"""
@@ -265,8 +260,7 @@ class SubmissionsListView(SpreadsheetExportMixin, SafePaginateListView):
         result = {}
         if self.select_date_form.is_valid():
             date_from = self.select_date_form.cleaned_data.get("date_from")
-            date_to = self.select_date_form.cleaned_data.get("date_to")
-            if date_to:
+            if date_to := self.select_date_form.cleaned_data.get("date_to"):
                 # careful: date_to must be increased by 1 day
                 # as submit_time is a time so will always be greater
                 date_to += datetime.timedelta(days=1)
@@ -280,9 +274,7 @@ class SubmissionsListView(SpreadsheetExportMixin, SafePaginateListView):
 
     def get_filename(self):
         """Returns the base filename for the generated spreadsheet data file"""
-        return "{}-export-{}".format(
-            self.form_page.slug, datetime.datetime.today().strftime("%Y-%m-%d")
-        )
+        return f'{self.form_page.slug}-export-{datetime.datetime.now().strftime("%Y-%m-%d")}'
 
     def render_to_response(self, context, **response_kwargs):
         if self.is_export:
@@ -293,10 +285,9 @@ class SubmissionsListView(SpreadsheetExportMixin, SafePaginateListView):
 
     def to_row_dict(self, item):
         """Orders the submission dictionary for spreadsheet writing"""
-        row_dict = OrderedDict(
+        return OrderedDict(
             (field, item.get_data().get(field)) for field in self.list_export
         )
-        return row_dict
 
     def get_context_data(self, **kwargs):
         """Return context for view"""
@@ -324,8 +315,7 @@ class SubmissionsListView(SpreadsheetExportMixin, SafePaginateListView):
             for name, label in data_fields:
                 order_label = None
                 if name in orderable_fields:
-                    order = ordering_by_field.get(name)
-                    if order:
+                    if order := ordering_by_field.get(name):
                         order_label = order[1]  # 'ascending' or 'descending'
                     else:
                         order_label = "orderable"  # not ordered yet but can be

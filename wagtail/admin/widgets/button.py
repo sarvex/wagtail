@@ -28,14 +28,14 @@ class Button:
             "class": " ".join(sorted(self.classes)),
             "title": self.label,
         }
-        attrs.update(self.attrs)
+        attrs |= self.attrs
         return format_html("<a{}>{}</a>", flatatt(attrs), self.label)
 
     def __str__(self):
         return self.render()
 
     def __repr__(self):
-        return "<Button: {}>".format(self.label)
+        return f"<Button: {self.label}>"
 
     def __lt__(self, other):
         if not isinstance(other, Button):

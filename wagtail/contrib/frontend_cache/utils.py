@@ -50,7 +50,7 @@ def get_backends(backend_settings=None, backends=None):
             backend_cls = import_string(backend)
         except ImportError as e:
             raise InvalidFrontendCacheBackendError(
-                "Could not find backend '%s': %s" % (backend, e)
+                f"Could not find backend '{backend}': {e}"
             )
 
         backend_objects[backend_name] = backend_cls(backend_config)
@@ -73,7 +73,7 @@ def purge_urls_from_cache(urls, backend_settings=None, backends=None):
         settings, "WAGTAILFRONTENDCACHE_LANGUAGES", list(content_languages.keys())
     )
     if settings.USE_I18N and languages:
-        langs_regex = "^/(%s)/" % "|".join(languages)
+        langs_regex = f'^/({"|".join(languages)})/'
         new_urls = []
 
         # Purge the given url for each managed language
@@ -84,7 +84,7 @@ def purge_urls_from_cache(urls, backend_settings=None, backends=None):
                     (
                         up.scheme,
                         up.netloc,
-                        re.sub(langs_regex, "/%s/" % isocode, up.path),
+                        re.sub(langs_regex, f"/{isocode}/", up.path),
                         up.params,
                         up.query,
                         up.fragment,

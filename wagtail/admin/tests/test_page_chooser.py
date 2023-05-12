@@ -550,7 +550,7 @@ class TestChooserExternalLink(WagtailTestUtils, TestCase):
     def post(self, post_data={}, url_params={}):
         url = reverse("wagtailadmin_choose_page_external_link")
         if url_params:
-            url += "?" + urlencode(url_params)
+            url += f"?{urlencode(url_params)}"
         return self.client.post(url, post_data)
 
     def test_simple(self):
@@ -758,7 +758,7 @@ class TestChooserAnchorLink(WagtailTestUtils, TestCase):
     def post(self, post_data={}, url_params={}):
         url = reverse("wagtailadmin_choose_page_anchor_link")
         if url_params:
-            url += "?" + urlencode(url_params)
+            url += f"?{urlencode(url_params)}"
         return self.client.post(url, post_data)
 
     def test_simple(self):
@@ -841,7 +841,7 @@ class TestChooserEmailLink(WagtailTestUtils, TestCase):
     def post(self, post_data={}, url_params={}):
         url = reverse("wagtailadmin_choose_page_email_link")
         if url_params:
-            url += "?" + urlencode(url_params)
+            url += f"?{urlencode(url_params)}"
         return self.client.post(url, post_data)
 
     def test_simple(self):
@@ -924,7 +924,7 @@ class TestChooserPhoneLink(WagtailTestUtils, TestCase):
     def post(self, post_data={}, url_params={}):
         url = reverse("wagtailadmin_choose_page_phone_link")
         if url_params:
-            url += "?" + urlencode(url_params)
+            url += f"?{urlencode(url_params)}"
         return self.client.post(url, post_data)
 
     def test_simple(self):

@@ -83,9 +83,8 @@ class PublishMenuItem(ActionMenuItem):
                 .for_page(context["parent_page"])
                 .can_publish_subpage()
             )
-        else:  # view == 'edit' or 'revisions_revert'
-            perms_tester = self.get_user_page_permissions_tester(context)
-            return not context["locked_for_user"] and perms_tester.can_publish()
+        perms_tester = self.get_user_page_permissions_tester(context)
+        return not context["locked_for_user"] and perms_tester.can_publish()
 
     def get_context_data(self, parent_context):
         context = super().get_context_data(parent_context)
@@ -126,8 +125,7 @@ class SubmitForModerationMenuItem(ActionMenuItem):
                 "task_name": workflow_state.current_task_state.task.name
             }
         elif page:
-            workflow = page.get_workflow()
-            if workflow:
+            if workflow := page.get_workflow():
                 context["label"] = _("Submit to %(workflow_name)s") % {
                     "workflow_name": workflow.name
                 }
@@ -165,19 +163,19 @@ class RestartWorkflowMenuItem(ActionMenuItem):
     icon_name = "login"
 
     def is_shown(self, context):
-        if not getattr(settings, "WAGTAIL_MODERATION_ENABLED", True):
+        if (
+            not getattr(settings, "WAGTAIL_MODERATION_ENABLED", True)
+            or context["view"] != "edit"
+        ):
             return False
-        elif context["view"] == "edit":
-            workflow_state = context["page"].current_workflow_state
-            perms_tester = self.get_user_page_permissions_tester(context)
-            return (
-                perms_tester.can_submit_for_moderation()
-                and not context["locked_for_user"]
-                and workflow_state
-                and workflow_state.user_can_cancel(context["request"].user)
-            )
-        else:
-            return False
+        workflow_state = context["page"].current_workflow_state
+        perms_tester = self.get_user_page_permissions_tester(context)
+        return (
+            perms_tester.can_submit_for_moderation()
+            and not context["locked_for_user"]
+            and workflow_state
+            and workflow_state.user_can_cancel(context["request"].user)
+        )
 
 
 class CancelWorkflowMenuItem(ActionMenuItem):
@@ -255,8 +253,7 @@ def _get_base_page_action_menu_items():
             PageLockedMenuItem(order=10000),
         ]
         for hook in hooks.get_hooks("register_page_action_menu_item"):
-            action_menu_item = hook()
-            if action_menu_item:
+            if action_menu_item := hook():
                 BASE_PAGE_ACTION_MENU_ITEMS.append(action_menu_item)
 
     return BASE_PAGE_ACTION_MENU_ITEMS
@@ -280,14 +277,13 @@ class PageActionMenu:
         self.menu_items = []
 
         if page:
-            task = page.current_workflow_task
-            current_workflow_state = page.current_workflow_state
-            is_final_task = (
-                current_workflow_state and current_workflow_state.is_at_final_task
-            )
-            if task:
+            if task := page.current_workflow_task:
                 actions = task.get_actions(page, request.user)
                 workflow_menu_items = []
+                current_workflow_state = page.current_workflow_state
+                is_final_task = (
+                    current_workflow_state and current_workflow_state.is_at_final_task
+                )
                 for name, label, launch_modal in actions:
                     icon_name = "edit"
                     if name == "approve":

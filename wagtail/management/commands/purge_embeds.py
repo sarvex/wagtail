@@ -10,8 +10,7 @@ class Command(BaseCommand):
 
         embeds = Embed.objects.all()
 
-        deleted_embeds_count = embeds.delete()[0]
-        if deleted_embeds_count:
+        if deleted_embeds_count := embeds.delete()[0]:
             self.stdout.write(
                 self.style.SUCCESS(
                     f"Successfully deleted {deleted_embeds_count} embeds"

@@ -6,11 +6,14 @@ from wagtail.models import Page
 
 class PageChoiceField(forms.ModelChoiceField):
     def label_from_instance(self, obj):
-        bits = []
-        for ancestor in (
-            obj.get_ancestors(inclusive=True).exclude(depth=1).specific(defer=True)
-        ):
-            bits.append(ancestor.get_admin_display_title())
+        bits = [
+            ancestor.get_admin_display_title()
+            for ancestor in (
+                obj.get_ancestors(inclusive=True)
+                .exclude(depth=1)
+                .specific(defer=True)
+            )
+        ]
         return " | ".join(bits)
 
 

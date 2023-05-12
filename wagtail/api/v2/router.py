@@ -36,11 +36,9 @@ class WagtailAPIRouter:
 
         Returns None if the model is not represented by any endpoints.
         """
-        endpoint = self.get_model_endpoint(model)
-
-        if endpoint:
+        if endpoint := self.get_model_endpoint(model):
             endpoint_name, endpoint_class = endpoint[0], endpoint[1]
-            url_namespace = self.url_namespace + ":" + endpoint_name
+            url_namespace = f"{self.url_namespace}:{endpoint_name}"
             return endpoint_class.get_model_listing_urlpath(
                 model, namespace=url_namespace
             )
@@ -52,11 +50,9 @@ class WagtailAPIRouter:
 
         Returns None if the object is not represented by any endpoints.
         """
-        endpoint = self.get_model_endpoint(model)
-
-        if endpoint:
+        if endpoint := self.get_model_endpoint(model):
             endpoint_name, endpoint_class = endpoint[0], endpoint[1]
-            url_namespace = self.url_namespace + ":" + endpoint_name
+            url_namespace = f"{self.url_namespace}:{endpoint_name}"
             return endpoint_class.get_object_detail_urlpath(
                 model, pk, namespace=url_namespace
             )
@@ -74,7 +70,7 @@ class WagtailAPIRouter:
 
         for name, class_ in self._endpoints.items():
             pattern = re_path(
-                r"^{}/".format(name),
+                f"^{name}/",
                 include((class_.get_urlpatterns(), name), namespace=name),
             )
             urlpatterns.append(pattern)

@@ -9,7 +9,7 @@ class AdminAutoHeightTextInput(widgets.Textarea):
             "data-controller": "w-autosize",
         }
         if attrs:
-            default_attrs.update(attrs)
+            default_attrs |= attrs
 
         # add a w-field__autosize classname
         try:

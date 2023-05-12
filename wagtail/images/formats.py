@@ -45,7 +45,7 @@ class Format:
 
         extra_attributes["alt"] = escape(alt_text)
         if self.classnames:
-            extra_attributes["class"] = "%s" % escape(self.classnames)
+            extra_attributes["class"] = f"{escape(self.classnames)}"
 
         return rendition.img_tag(extra_attributes)
 
@@ -56,7 +56,7 @@ FORMATS_BY_NAME = {}
 
 def register_image_format(format):
     if format.name in FORMATS_BY_NAME:
-        raise KeyError("Image format '%s' is already registered" % format.name)
+        raise KeyError(f"Image format '{format.name}' is already registered")
     FORMATS_BY_NAME[format.name] = format
     FORMATS.append(format)
 
@@ -73,7 +73,7 @@ def unregister_image_format(format_name):
         del FORMATS_BY_NAME[format_name]
         FORMATS = [fmt for fmt in FORMATS if fmt.name != format_name]
     except KeyError:
-        raise KeyError("Image format '%s' is not registered" % format_name)
+        raise KeyError(f"Image format '{format_name}' is not registered")
 
 
 def get_image_formats():

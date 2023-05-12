@@ -57,12 +57,10 @@ class TestCollectionPrivacyDocument(WagtailTestUtils, TestCase):
             "wagtaildocs_authenticate_with_password", args=[self.view_restriction.id]
         )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, '<form action="%s"' % submit_url)
+        self.assertContains(response, f'<form action="{submit_url}"')
         self.assertContains(
             response,
-            '<input id="id_return_url" name="return_url" type="hidden" value="{}" />'.format(
-                doc_url
-            ),
+            f'<input id="id_return_url" name="return_url" type="hidden" value="{doc_url}" />',
             html=True,
         )
 
@@ -78,7 +76,7 @@ class TestCollectionPrivacyDocument(WagtailTestUtils, TestCase):
         self.assertEqual(
             response.templates[0].name, "wagtaildocs/password_required.html"
         )
-        self.assertContains(response, '<form action="%s"' % submit_url)
+        self.assertContains(response, f'<form action="{submit_url}"')
 
         # posting the correct password should redirect back to return_url
         response = self.client.post(
@@ -108,12 +106,12 @@ class TestCollectionPrivacyDocument(WagtailTestUtils, TestCase):
 
     def test_group_restriction_with_anonymous_user(self):
         response, url = self.get_document(self.group_collection)
-        self.assertRedirects(response, "/_util/login/?next={}".format(url))
+        self.assertRedirects(response, f"/_util/login/?next={url}")
 
     def test_group_restriction_with_unpermitted_user(self):
         self.login(username="eventmoderator", password="password")
         response, url = self.get_document(self.group_collection)
-        self.assertRedirects(response, "/_util/login/?next={}".format(url))
+        self.assertRedirects(response, f"/_util/login/?next={url}")
 
     def test_group_restriction_with_permitted_user(self):
         self.login(username="eventeditor", password="password")
@@ -127,7 +125,7 @@ class TestCollectionPrivacyDocument(WagtailTestUtils, TestCase):
 
     def test_login_restriction_with_anonymous_user(self):
         response, url = self.get_document(self.login_collection)
-        self.assertRedirects(response, "/_util/login/?next={}".format(url))
+        self.assertRedirects(response, f"/_util/login/?next={url}")
 
     def test_login_restriction_with_logged_in_user(self):
         self.login(username="eventmoderator", password="password")

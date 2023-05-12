@@ -26,9 +26,7 @@ class TestLoginView(WagtailTestUtils, TestCase):
 
     def test_success_redirect_honour_redirect_get_parameter(self):
         homepage_admin_url = reverse("wagtailadmin_pages:edit", args=[self.homepage.pk])
-        login_url = reverse("wagtailadmin_login") + "?next={}".format(
-            homepage_admin_url
-        )
+        login_url = (reverse("wagtailadmin_login") + f"?next={homepage_admin_url}")
         response = self.client.post(
             login_url,
             {
@@ -60,9 +58,7 @@ class TestLoginView(WagtailTestUtils, TestCase):
         self.login(username="test@email.com", password="password")
 
         homepage_admin_url = reverse("wagtailadmin_pages:edit", args=[self.homepage.pk])
-        login_url = reverse("wagtailadmin_login") + "?next={}".format(
-            homepage_admin_url
-        )
+        login_url = (reverse("wagtailadmin_login") + f"?next={homepage_admin_url}")
         response = self.client.get(login_url)
         self.assertRedirects(response, homepage_admin_url)
 

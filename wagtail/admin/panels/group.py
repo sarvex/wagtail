@@ -36,19 +36,7 @@ class PanelGroup(Panel):
         for child in self.children:
             child_options = child.get_form_options()
             for key, new_val in child_options.items():
-                if key not in options:
-                    # if val is a known mutable container type that we're going to merge subsequent
-                    # child values into, create a copy so that we don't risk that change leaking
-                    # back into the child's internal state
-                    if (
-                        isinstance(new_val, list)
-                        or isinstance(new_val, dict)
-                        or isinstance(new_val, set)
-                    ):
-                        options[key] = new_val.copy()
-                    else:
-                        options[key] = new_val
-                else:
+                if key in options:
                     current_val = options[key]
                     if isinstance(current_val, list) and isinstance(
                         new_val, (list, tuple)
@@ -68,6 +56,10 @@ class PanelGroup(Panel):
                             % (current_val, new_val, key)
                         )
 
+                elif isinstance(new_val, (list, dict, set)):
+                    options[key] = new_val.copy()
+                else:
+                    options[key] = new_val
         return options
 
     def on_model_bound(self):
@@ -102,7 +94,7 @@ class PanelGroup(Panel):
                     instance=self.instance,
                     request=self.request,
                     form=self.form,
-                    prefix=("%s-child-%s" % (self.prefix, identifier)),
+                    prefix=f"{self.prefix}-child-{identifier}",
                 )
                 for child, identifier in zip(
                     self.panel.children, self.panel.child_identifiers
@@ -132,9 +124,10 @@ class PanelGroup(Panel):
             are shown.
             """
 
-            if self.panel.permission:
-                if not self.request.user.has_perm(self.panel.permission):
-                    return False
+            if self.panel.permission and not self.request.user.has_perm(
+                self.panel.permission
+            ):
+                return False
 
             return any(child.is_shown() for child in self.children)
 

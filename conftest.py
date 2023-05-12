@@ -36,10 +36,6 @@ def pytest_configure(config):
         warnings.filterwarnings(
             "default", category=DeprecationWarning, module=only_wagtail
         )
-    elif deprecation == "none":
-        # Deprecation warnings are ignored by default
-        pass
-
     if config.getoption("postgres"):
         os.environ["DATABASE_ENGINE"] = "django.db.backends.postgresql"
 

@@ -51,4 +51,4 @@ def versioned_static(path):
     if VERSION_HASH is None or "?" in base_url:
         return base_url
     else:
-        return base_url + "?v=" + VERSION_HASH
+        return f"{base_url}?v={VERSION_HASH}"

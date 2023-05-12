@@ -51,10 +51,9 @@ class TempFolderStorage(BaseStorage):
     def open(self, mode="r"):
         if self.name:
             return open(self.get_full_path(), mode)
-        else:
-            tmp_file = tempfile.NamedTemporaryFile(delete=False)
-            self.name = tmp_file.name
-            return tmp_file
+        tmp_file = tempfile.NamedTemporaryFile(delete=False)
+        self.name = tmp_file.name
+        return tmp_file
 
     def save(self, data, mode="w"):
         with self.open(mode=mode) as file:

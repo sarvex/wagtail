@@ -171,7 +171,7 @@ class ChooserViewSet(ViewSet):
                 model_name = self.model.split(".")[-1]
             else:
                 model_name = self.model.__name__
-            widget_class_name = "%sChooserWidget" % model_name
+            widget_class_name = f"{model_name}ChooserWidget"
 
         return type(
             widget_class_name,
@@ -202,7 +202,7 @@ class ChooserViewSet(ViewSet):
             },
         )
         cls = type(
-            name or "%sChooserBlock" % self.model_name,
+            name or f"{self.model_name}ChooserBlock",
             (self.base_block_class,),
             {
                 "target_model": self.model,

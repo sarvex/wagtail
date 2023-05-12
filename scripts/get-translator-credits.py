@@ -15,7 +15,7 @@ for file_listing_line in file_listing.stdout:
     filename = file_listing_line.strip()
 
     # extract locale string from filename
-    locale = re.search(r"locale/(\w+)/LC_MESSAGES", str(filename)).group(1)
+    locale = re.search(r"locale/(\w+)/LC_MESSAGES", str(filename))[1]
     if locale == "en":
         continue
 
@@ -29,15 +29,14 @@ for file_listing_line in file_listing.stdout:
                     author_match = re.match(r"\# (.*), [\d\-]+", line)
                     if not author_match:
                         break
-                    author = author_match.group(1)
+                    author = author_match[1]
                     authors_by_locale[locale].add(author)
                 elif line.startswith("# Translators:"):
                     has_found_translators_heading = True
+            elif has_found_translators_heading:
+                break
             else:
-                if has_found_translators_heading:
-                    break
-                else:
-                    raise Exception("No 'Translators:' heading found in %s" % filename)
+                raise Exception(f"No 'Translators:' heading found in {filename}")
 
 
 LANGUAGE_OVERRIDES = {
@@ -60,7 +59,7 @@ language_names = [
 language_names.sort()
 
 for (language_name, locale) in language_names:
-    print(("%s - %s" % (language_name, locale)))  # noqa
+    print(f"{language_name} - {locale}")
     print("-----")  # noqa
     for author in sorted(authors_by_locale[locale]):
         print(author)  # noqa

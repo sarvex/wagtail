@@ -22,13 +22,9 @@ class OEmbedFinder(EmbedFinder):
         self._endpoints = {}
 
         for provider in providers or all_providers:
-            patterns = []
-
             endpoint = provider["endpoint"].replace("{format}", "json")
 
-            for url in provider["urls"]:
-                patterns.append(re.compile(url))
-
+            patterns = [re.compile(url) for url in provider["urls"]]
             self._endpoints[endpoint] = patterns
 
         if options:
@@ -60,7 +56,7 @@ class OEmbedFinder(EmbedFinder):
             params["maxheight"] = max_height
 
         # Perform request
-        request = Request(endpoint + "?" + urlencode(params))
+        request = Request(f"{endpoint}?{urlencode(params)}")
         request.add_header("User-agent", "Mozilla/5.0")
         try:
             r = urllib_request.urlopen(request)
@@ -70,7 +66,7 @@ class OEmbedFinder(EmbedFinder):
 
         # Convert photos into HTML
         if oembed["type"] == "photo":
-            html = '<img src="%s" alt="">' % (oembed["url"],)
+            html = f'<img src="{oembed["url"]}" alt="">'
         else:
             html = oembed.get("html")
 

@@ -44,9 +44,7 @@ class UpgradeNotificationPanel(Component):
 
     def upgrade_check_lts_only(self) -> bool:
         upgrade_check = self.get_upgrade_check_setting()
-        if isinstance(upgrade_check, str) and upgrade_check.lower() == "lts":
-            return True
-        return False
+        return isinstance(upgrade_check, str) and upgrade_check.lower() == "lts"
 
     def get_context_data(self, parent_context: Mapping[str, Any]) -> Mapping[str, Any]:
         return {"lts_only": self.upgrade_check_lts_only()}
@@ -81,10 +79,7 @@ class WhatsNewInWagtailVersionPanel(Component):
             return False
 
         profile = getattr(parent_context["request"].user, "wagtail_userprofile", None)
-        if profile and profile.dismissibles.get(self.get_dismissible_id()):
-            return False
-
-        return True
+        return not profile or not profile.dismissibles.get(self.get_dismissible_id())
 
     def render_html(self, parent_context: Mapping[str, Any] = None) -> str:
         if not self.is_shown(parent_context):
@@ -279,8 +274,7 @@ class RecentEditsPanel(Component):
         pages = Page.objects.specific().in_bulk(page_keys)
         context["last_edits"] = []
         for revision in last_edits:
-            page = pages.get(int(revision.object_id))
-            if page:
+            if page := pages.get(int(revision.object_id)):
                 context["last_edits"].append([revision, page])
 
         context["request"] = request

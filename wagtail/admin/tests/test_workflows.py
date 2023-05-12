@@ -1067,7 +1067,7 @@ class BasePageWorkflowTests(WagtailTestUtils, TestCase):
             f"action-{action}": "True",
         }
         if data:
-            post_data.update(data)
+            post_data |= data
         return self.client.post(self.get_url("edit"), post_data, **kwargs)
 
     def workflow_action(self, action, data=None, **kwargs):
@@ -1146,7 +1146,7 @@ class BaseSnippetWorkflowTests(BasePageWorkflowTests):
             f"action-{action}": "True",
         }
         if data:
-            post_data.update(data)
+            post_data |= data
         return self.client.post(self.get_url("edit"), post_data, **kwargs)
 
 
@@ -1188,7 +1188,7 @@ class TestSubmitPageToWorkflow(BasePageWorkflowTests):
         # Should show the moderation status
         self.assertRegex(
             response.content.decode("utf-8"),
-            r"Sent to[\s|\n]+{}".format(self.object.current_workflow_task.name),
+            f"Sent to[\s|\n]+{self.object.current_workflow_task.name}",
         )
         self.assertContains(response, "In Moderation")
         self.assertNotContains(response, "Draft")
@@ -1521,17 +1521,13 @@ class TestSubmitPageToWorkflow(BasePageWorkflowTests):
         # - to superuser - submitted to workflow test_workflow
         self.assertEqual(len(mail.outbox), 3)
 
-        # the 'submitted to workflow' email should include the submitter's name
-        workflow_message = None
         email_subject = (
             f'The {self.model_name} "{get_latest_str(self.object)}" has been submitted '
             'to workflow "test_workflow"'
         )
-        for msg in mail.outbox:
-            if msg.subject == email_subject:
-                workflow_message = msg
-                break
-
+        workflow_message = next(
+            (msg for msg in mail.outbox if msg.subject == email_subject), None
+        )
         self.assertTrue(workflow_message)
         self.assertIn(
             (
@@ -1558,17 +1554,13 @@ class TestSubmitPageToWorkflow(BasePageWorkflowTests):
         # - to superuser - submitted to workflow test_workflow
         self.assertEqual(len(mail.outbox), 3)
 
-        # the 'submitted to workflow' email should include the submitter's name
-        workflow_message = None
         email_subject = (
             f'The {self.model_name} "{get_latest_str(self.object)}" has been submitted '
             'to workflow "test_workflow"'
         )
-        for msg in mail.outbox:
-            if msg.subject == email_subject:
-                workflow_message = msg
-                break
-
+        workflow_message = next(
+            (msg for msg in mail.outbox if msg.subject == email_subject), None
+        )
         self.assertTrue(workflow_message)
         self.assertIn(
             (
@@ -2613,7 +2605,7 @@ class TestPageNotificationPreferences(BasePageWorkflowTests):
             + "#tab-notifications"
         )
         self.assertIn(
-            "Edit your notification preferences here: %s" % account_notifications_url,
+            f"Edit your notification preferences here: {account_notifications_url}",
             workflow_submission_email_body,
         )
 
@@ -3387,15 +3379,11 @@ class TestPageWorkflowStatus(BasePageWorkflowTests):
         response = self.client.get(self.get_url("edit"))
         html = response.content.decode("utf-8")
         self.assertIn(
-            "In progress\n        </span>\n                        {}".format(
-                self.task_1.name
-            ),
+            f"In progress\n        </span>\n                        {self.task_1.name}",
             html,
         )
         self.assertIn(
-            "Not started\n        </span>\n                        {}".format(
-                self.task_2.name
-            ),
+            f"Not started\n        </span>\n                        {self.task_2.name}",
             html,
         )
         self.assertIn(self.get_url("history"), html)
@@ -3412,14 +3400,12 @@ class TestPageWorkflowStatus(BasePageWorkflowTests):
         self.post("submit")
         response = self.client.get(self.get_url("edit"))
         self.assertRegex(
-            response.content.decode("utf-8"),
-            r"Sent to[\s|\n]+{}".format(self.task_1.name),
+            response.content.decode("utf-8"), f"Sent to[\s|\n]+{self.task_1.name}"
         )
 
         response = self.workflow_action("approve")
         self.assertRegex(
-            response.content.decode("utf-8"),
-            r"Sent to[\s|\n]+{}".format(self.task_2.name),
+            response.content.decode("utf-8"), f"Sent to[\s|\n]+{self.task_2.name}"
         )
 
         response = self.workflow_action("reject")
@@ -3429,8 +3415,7 @@ class TestPageWorkflowStatus(BasePageWorkflowTests):
         self.post("submit")
         response = self.client.get(self.get_url("edit"))
         self.assertRegex(
-            response.content.decode("utf-8"),
-            r"Sent to[\s|\n]+{}".format(self.task_2.name),
+            response.content.decode("utf-8"), f"Sent to[\s|\n]+{self.task_2.name}"
         )
 
         response = self.workflow_action("approve")
@@ -3447,15 +3432,13 @@ class TestPageWorkflowStatus(BasePageWorkflowTests):
         self.post("submit")
         response = self.workflow_action("approve")
         self.assertRegex(
-            response.content.decode("utf-8"),
-            r"Sent to[\s|\n]+{}".format(self.task_2.name),
+            response.content.decode("utf-8"), f"Sent to[\s|\n]+{self.task_2.name}"
         )
         self.workflow_action("reject")
         self.post("restart-workflow")
         response = self.client.get(self.get_url("edit"))
         self.assertRegex(
-            response.content.decode("utf-8"),
-            r"Sent to[\s|\n]+{}".format(self.task_1.name),
+            response.content.decode("utf-8"), f"Sent to[\s|\n]+{self.task_1.name}"
         )
 
     def test_workflow_status_modal_task_comments(self):

@@ -152,8 +152,11 @@ def register_document_permissions_panel():
 
 @hooks.register("describe_collection_contents")
 def describe_collection_docs(collection):
-    docs_count = get_document_model().objects.filter(collection=collection).count()
-    if docs_count:
+    if (
+        docs_count := get_document_model()
+        .objects.filter(collection=collection)
+        .count()
+    ):
         url = reverse("wagtaildocs:index") + ("?collection_id=%d" % collection.id)
         return {
             "count": docs_count,

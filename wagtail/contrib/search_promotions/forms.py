@@ -69,7 +69,7 @@ class SearchPromotionsFormSet(SearchPromotionsFormSetBase):
             form = self.forms[i]
             if self.can_delete and self._should_delete_form(form):
                 non_deleted_forms -= 1
-            if not (form.instance.id is None and not form.has_changed()):
+            if form.instance.id is not None or form.has_changed():
                 non_empty_forms += 1
         if (
             non_deleted_forms < self.minimum_forms

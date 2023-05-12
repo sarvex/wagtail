@@ -17,7 +17,7 @@ class CommentReplyForm(WagtailAdminModelForm):
             self.instance.user = user
         elif self.instance.user != user:
             # trying to edit someone else's comment reply
-            if any(field for field in self.changed_data):
+            if any(self.changed_data):
                 # includes DELETION_FIELD_NAME, as users cannot delete each other's individual comment replies
                 # if deleting a whole thread, this should be done by deleting the parent Comment instead
                 self.add_error(

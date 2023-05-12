@@ -33,9 +33,7 @@ class BenchPageExplorerWith50LargePages(Benchmark, WagtailTestUtils, TestCase):
         for i in range(50):
             self.root_page.add_child(
                 instance=StreamPage(
-                    title="Page {}".format(i + 1),
-                    slug=str(i + 1),
-                    body=body,
+                    title=f"Page {i + 1}", slug=str(i + 1), body=body
                 )
             )
 
@@ -71,7 +69,7 @@ class BenchPageExplorerWithCustomURLPages(Benchmark, WagtailTestUtils, TestCase)
         for i in range(50):
             self.root_page.add_child(
                 instance=SingleEventPage(
-                    title="Event {}".format(i + 1),
+                    title=f"Event {i + 1}",
                     slug=str(i + 1),
                     date_from=timezone.now(),
                     audience="public",

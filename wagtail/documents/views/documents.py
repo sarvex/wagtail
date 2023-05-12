@@ -51,8 +51,7 @@ class BaseListingView(TemplateView):
 
         # Filter by collection
         self.current_collection = None
-        collection_id = self.request.GET.get("collection_id")
-        if collection_id:
+        if collection_id := self.request.GET.get("collection_id"):
             try:
                 self.current_collection = Collection.objects.get(id=collection_id)
                 documents = documents.filter(collection=self.current_collection)
@@ -76,9 +75,8 @@ class BaseListingView(TemplateView):
         documents = paginator.get_page(self.request.GET.get("p"))
 
         next_url = reverse("wagtaildocs:index")
-        request_query_string = self.request.META.get("QUERY_STRING")
-        if request_query_string:
-            next_url += "?" + request_query_string
+        if request_query_string := self.request.META.get("QUERY_STRING"):
+            next_url += f"?{request_query_string}"
 
         context.update(
             {
@@ -209,20 +207,18 @@ def edit(request, document_id):
         # Document is hosted externally (eg, S3)
         local_path = None
 
-    if local_path:
-        # Give error if document file doesn't exist
-        if not os.path.isfile(local_path):
-            messages.error(
-                request,
-                _(
-                    "The file could not be found. Please change the source or delete the document"
-                ),
-                buttons=[
-                    messages.button(
-                        reverse("wagtaildocs:delete", args=(doc.id,)), _("Delete")
-                    )
-                ],
-            )
+    if local_path and not os.path.isfile(local_path):
+        messages.error(
+            request,
+            _(
+                "The file could not be found. Please change the source or delete the document"
+            ),
+            buttons=[
+                messages.button(
+                    reverse("wagtaildocs:delete", args=(doc.id,)), _("Delete")
+                )
+            ],
+        )
 
     return TemplateResponse(
         request,

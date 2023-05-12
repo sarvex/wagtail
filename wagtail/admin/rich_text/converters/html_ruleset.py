@@ -69,25 +69,18 @@ class HTMLRuleset:
         rules.sort(key=lambda t: t[0])
 
     def add_rule(self, selector, result):
-        match = ELEMENT_SELECTOR.match(selector)
-        if match:
+        if match := ELEMENT_SELECTOR.match(selector):
             name = match.group(1)
             self._add_element_rule(name, result)
             return
 
-        match = ELEMENT_WITH_ATTR_SELECTOR.match(selector)
-        if match:
+        if match := ELEMENT_WITH_ATTR_SELECTOR.match(selector):
             name, attr = match.groups()
             self._add_element_with_attr_rule(name, attr, result)
             return
 
-        for regex in (
-            ELEMENT_WITH_ATTR_EXACT_SINGLE_QUOTE_SELECTOR,
-            ELEMENT_WITH_ATTR_EXACT_DOUBLE_QUOTE_SELECTOR,
-            ELEMENT_WITH_ATTR_EXACT_UNQUOTED_SELECTOR,
-        ):
-            match = regex.match(selector)
-            if match:
+        for regex in (ELEMENT_WITH_ATTR_EXACT_SINGLE_QUOTE_SELECTOR, ELEMENT_WITH_ATTR_EXACT_DOUBLE_QUOTE_SELECTOR, ELEMENT_WITH_ATTR_EXACT_UNQUOTED_SELECTOR):
+            if match := regex.match(selector):
                 name, attr, value = match.groups()
                 self._add_element_with_attr_exact_rule(name, attr, value, result)
                 return

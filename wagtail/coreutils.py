@@ -52,7 +52,7 @@ def get_model_string(model):
 
     This an be reversed with the `resolve_model_string` function
     """
-    return model._meta.app_label + "." + model.__name__
+    return f"{model._meta.app_label}.{model.__name__}"
 
 
 def resolve_model_string(model_string, default_app=None):
@@ -67,17 +67,16 @@ def resolve_model_string(model_string, default_app=None):
         try:
             app_label, model_name = model_string.split(".")
         except ValueError:
-            if default_app is not None:
-                # If we can't split, assume a model in current app
-                app_label = default_app
-                model_name = model_string
-            else:
+            if default_app is None:
                 raise ValueError(
                     "Can not resolve {0!r} into a model. Model names "
                     "should be in the form app_label.model_name".format(model_string),
                     model_string,
                 )
 
+            # If we can't split, assume a model in current app
+            app_label = default_app
+            model_name = model_string
         return apps.get_model(app_label, model_name)
 
     elif isinstance(model_string, type) and issubclass(model_string, Model):
@@ -147,9 +146,7 @@ def safe_snake_case(value):
 
     slugified_ascii_string = cautious_slugify(value)
 
-    snake_case_string = slugified_ascii_string.replace("-", "_")
-
-    return snake_case_string
+    return slugified_ascii_string.replace("-", "_")
 
 
 def get_content_type_label(content_type):
@@ -160,8 +157,7 @@ def get_content_type_label(content_type):
     if content_type is None:
         return _("Unknown content type")
 
-    model = content_type.model_class()
-    if model:
+    if model := content_type.model_class():
         return str(capfirst(model._meta.verbose_name))
     else:
         # no corresponding model class found; fall back on the name field of the ContentType
@@ -242,7 +238,7 @@ def find_available_slug(parent, requested_slug, ignore_page_id=None):
     number = 1
 
     while slug in existing_slugs:
-        slug = requested_slug + "-" + str(number)
+        slug = f"{requested_slug}-{str(number)}"
         number += 1
 
     return slug
@@ -282,10 +278,7 @@ def get_content_languages():
     for language_code, name in content_languages:
         if language_code not in languages:
             raise ImproperlyConfigured(
-                "The language {} is specified in WAGTAIL_CONTENT_LANGUAGES but not LANGUAGES. "
-                "WAGTAIL_CONTENT_LANGUAGES must be a subset of LANGUAGES.".format(
-                    language_code
-                )
+                f"The language {language_code} is specified in WAGTAIL_CONTENT_LANGUAGES but not LANGUAGES. WAGTAIL_CONTENT_LANGUAGES must be a subset of LANGUAGES."
             )
 
     return dict(content_languages)
@@ -322,7 +315,7 @@ def get_supported_content_language_variant(lang_code, strict=False):
         if not strict:
             # if fr-fr is not supported, try fr-ca.
             for supported_code in supported_lang_codes:
-                if supported_code.startswith(generic_lang_code + "-"):
+                if supported_code.startswith(f"{generic_lang_code}-"):
                     return supported_code
     raise LookupError(lang_code)
 
@@ -334,10 +327,9 @@ def get_locales_display_names() -> dict:
     """
     from wagtail.models import Locale  # inlined to avoid circular imports
 
-    locales_map = {
+    return {
         locale.pk: locale.get_display_name() for locale in Locale.objects.all()
     }
-    return locales_map
 
 
 @receiver(setting_changed)

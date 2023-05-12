@@ -307,6 +307,9 @@ class TestAccessibilityCheckerConfig(WagtailTestUtils, TestCase):
             )
 
     def test_custom_run_only_and_rules_per_request(self):
+
+
+
         class CustomRunOnlyAccessibilityItem(AccessibilityItem):
             # Enable all rules within these tags
             axe_run_only = [
@@ -325,9 +328,8 @@ class TestAccessibilityCheckerConfig(WagtailTestUtils, TestCase):
 
             def get_axe_rules(self, request):
                 # Do not turn off any rules for superusers
-                if request.user.is_superuser:
-                    return {}
-                return super().get_axe_rules(request)
+                return {} if request.user.is_superuser else super().get_axe_rules(request)
+
 
         with hooks.register_temporarily(
             "construct_wagtail_userbar",
@@ -428,7 +430,7 @@ class TestUserbarAddLink(WagtailTestUtils, TestCase):
             "wagtailadmin_pages:add_subpage", args=(self.business_index.id,)
         )
         expected_link = (
-            '<a href="%s" target="_parent">Add a child page</a>' % expected_url
+            f'<a href="{expected_url}" target="_parent">Add a child page</a>'
         )
         self.assertNotContains(response, expected_link)
 

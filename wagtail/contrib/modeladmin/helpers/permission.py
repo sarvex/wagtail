@@ -46,17 +46,17 @@ class PermissionHelper:
         Django user's built-in `has_perm` method.
         """
 
-        return user.has_perm("%s.%s" % (self.opts.app_label, perm_codename))
+        return user.has_perm(f"{self.opts.app_label}.{perm_codename}")
 
     def user_has_any_permissions(self, user):
         """
         Return a boolean to indicate whether `user` has any model-wide
         permissions
         """
-        for perm_codename in self.all_permission_codenames:
-            if self.user_has_specific_permission(user, perm_codename):
-                return True
-        return False
+        return any(
+            self.user_has_specific_permission(user, perm_codename)
+            for perm_codename in self.all_permission_codenames
+        )
 
     def user_can_list(self, user):
         """

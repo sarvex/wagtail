@@ -41,11 +41,7 @@ class StaticBlockAdapter(Adapter):
     def js_args(self, block):
         admin_text = block.get_admin_text()
 
-        if isinstance(admin_text, SafeString):
-            text_or_html = "html"
-        else:
-            text_or_html = "text"
-
+        text_or_html = "html" if isinstance(admin_text, SafeString) else "text"
         return [
             block.name,
             {

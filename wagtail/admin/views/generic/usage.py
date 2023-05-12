@@ -67,8 +67,11 @@ class UsageView(BaseObjectMixin, IndexView):
         url_finder = AdminURLFinder(self.request.user)
         results = []
         for object, references in object_list:
-            row = {"object": object, "references": references}
-            row["edit_url"] = url_finder.get_edit_url(object)
+            row = {
+                "object": object,
+                "references": references,
+                "edit_url": url_finder.get_edit_url(object),
+            }
             if row["edit_url"] is None:
                 row["label"] = _("(Private %(object)s)") % {
                     "object": object._meta.verbose_name

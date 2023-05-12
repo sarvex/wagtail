@@ -44,7 +44,7 @@ class BaseBlock(type):
             getattr(base, "_meta_class", None) for base in bases
         ]
         meta_class_bases = tuple(filter(bool, meta_class_bases))
-        cls._meta_class = type(str(name + "Meta"), meta_class_bases, {})
+        cls._meta_class = type(str(f"{name}Meta"), meta_class_bases, {})
 
         return cls
 
@@ -115,7 +115,7 @@ class Block(metaclass=BaseBlock):
                 )
 
     def value_from_datadict(self, data, files, prefix):
-        raise NotImplementedError("%s.value_from_datadict" % self.__class__)
+        raise NotImplementedError(f"{self.__class__}.value_from_datadict")
 
     def value_omitted_from_data(self, data, files, name):
         """
@@ -357,7 +357,7 @@ class Block(metaclass=BaseBlock):
         try:
             path = module.DECONSTRUCT_ALIASES[self.__class__]
         except (AttributeError, KeyError):
-            path = "%s.%s" % (module_name, name)
+            path = f"{module_name}.{name}"
 
         return (
             path,
@@ -462,7 +462,7 @@ class DeclarativeSubBlocksMetaclass(BaseBlock):
     (cheerfully stolen from https://github.com/django/django/blob/main/django/forms/forms.py)
     """
 
-    def __new__(mcs, name, bases, attrs):
+    def __new__(cls, name, bases, attrs):
         # Collect sub-blocks declared on the current class.
         # These are available on the class as `declared_blocks`
         current_blocks = []
@@ -474,8 +474,8 @@ class DeclarativeSubBlocksMetaclass(BaseBlock):
         current_blocks.sort(key=lambda x: x[1].creation_counter)
         attrs["declared_blocks"] = collections.OrderedDict(current_blocks)
 
-        new_class = super(DeclarativeSubBlocksMetaclass, mcs).__new__(
-            mcs, name, bases, attrs
+        new_class = super(DeclarativeSubBlocksMetaclass, cls).__new__(
+            cls, name, bases, attrs
         )
 
         # Walk through the MRO, collecting all inherited sub-blocks, to make

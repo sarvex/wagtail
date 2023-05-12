@@ -89,15 +89,11 @@ class Command(BaseCommand):
         successes = 0
         skipped = 0
         total = 0
-        site = None
-
-        if site_id:
-            site = Site.objects.get(id=site_id)
-
+        site = Site.objects.get(id=site_id) if site_id else None
         if not os.path.exists(src):
             raise Exception("Missing file '{0}'".format(src))
 
-        if not os.path.getsize(src) > 0:
+        if os.path.getsize(src) <= 0:
             raise Exception("File '{0}' is empty".format(src))
 
         _, extension = os.path.splitext(src)
@@ -111,11 +107,7 @@ class Command(BaseCommand):
             raise Exception("Invalid format '{0}'".format(extension))
         input_format = import_format_cls()
 
-        if extension in ["xls", "xlsx"]:
-            mode = "rb"
-        else:
-            mode = "r"
-
+        mode = "rb" if extension in ["xls", "xlsx"] else "r"
         with open(src, mode) as fh:
             imported_data = input_format.create_dataset(fh.read())
             sample_data = Dataset(imported_data[:4], imported_data.headers)
@@ -154,36 +146,19 @@ class Command(BaseCommand):
                 if not form.is_valid():
                     error = form.errors.as_text().replace("\n", "")
                     self.stdout.write(
-                        "{}. Error: {} -> {} (Reason: {})".format(
-                            total,
-                            from_link,
-                            to_link,
-                            error,
-                        )
+                        f"{total}. Error: {from_link} -> {to_link} (Reason: {error})"
                     )
                     errors.append(error)
                     continue
 
                 if ask:
-                    answer = get_input(
-                        "{}. Found {} -> {} Create? Y/n: ".format(
-                            total,
-                            from_link,
-                            to_link,
-                        )
-                    )
+                    answer = get_input(f"{total}. Found {from_link} -> {to_link} Create? Y/n: ")
 
                     if answer != "Y":
                         skipped += 1
                         continue
                 else:
-                    self.stdout.write(
-                        "{}. {} -> {}".format(
-                            total,
-                            from_link,
-                            to_link,
-                        )
-                    )
+                    self.stdout.write(f"{total}. {from_link} -> {to_link}")
 
                 if dry_run:
                     successes += 1
@@ -193,10 +168,10 @@ class Command(BaseCommand):
                 successes += 1
 
         self.stdout.write("\n")
-        self.stdout.write("Found: {}".format(total))
-        self.stdout.write("Created: {}".format(successes))
-        self.stdout.write("Skipped : {}".format(skipped))
-        self.stdout.write("Errors: {}".format(len(errors)))
+        self.stdout.write(f"Found: {total}")
+        self.stdout.write(f"Created: {successes}")
+        self.stdout.write(f"Skipped : {skipped}")
+        self.stdout.write(f"Errors: {len(errors)}")
 
 
 def get_input(msg):  # pragma: no cover

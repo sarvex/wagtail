@@ -43,8 +43,7 @@ class Unpublish(UnpublishView):
         }
 
     def get_next_url(self):
-        next_url = get_valid_next_url_from_request(self.request)
-        if next_url:
+        if next_url := get_valid_next_url_from_request(self.request):
             return next_url
         return reverse(self.index_url_name, args=(self.object.get_parent().id,))
 
@@ -84,13 +83,16 @@ class Unpublish(UnpublishView):
         context.update(
             {
                 "page": self.object,
-                "live_descendant_count": self.object.get_descendants().live().count(),
+                "live_descendant_count": self.object.get_descendants()
+                .live()
+                .count(),
                 "translation_count": len(self.objects_to_unpublish[1:]),
                 "translation_descendant_count": sum(
-                    [
-                        p.get_descendants().filter(alias_of__isnull=True).live().count()
-                        for p in self.objects_to_unpublish[1:]
-                    ]
+                    p.get_descendants()
+                    .filter(alias_of__isnull=True)
+                    .live()
+                    .count()
+                    for p in self.objects_to_unpublish[1:]
                 ),
             }
         )

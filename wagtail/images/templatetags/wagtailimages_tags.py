@@ -52,8 +52,7 @@ def image(parser, token):
                     filter_specs.append(bit)
                 else:
                     raise template.TemplateSyntaxError(
-                        "filter specs in 'image' tag may only contain A-Z, a-z, 0-9, dots, hyphens and underscores. "
-                        "(given filter: {})".format(bit)
+                        f"filter specs in 'image' tag may only contain A-Z, a-z, 0-9, dots, hyphens and underscores. (given filter: {bit})"
                     )
 
     if as_context and output_var_name is None:
@@ -64,7 +63,7 @@ def image(parser, token):
         # attributes are not valid when using the 'as img' form of the tag
         is_valid = False
 
-    if len(filter_specs) == 0:
+    if not filter_specs:
         # there must always be at least one filter spec provided
         is_valid = False
 
@@ -136,10 +135,7 @@ class ImageNode(template.Node):
             context[self.output_var_name] = rendition
             return ""
         else:
-            # render the rendition's image tag now
-            resolved_attrs = {}
-            for key in self.attrs:
-                resolved_attrs[key] = self.attrs[key].resolve(context)
+            resolved_attrs = {key: self.attrs[key].resolve(context) for key in self.attrs}
             return rendition.img_tag(resolved_attrs)
 
 

@@ -1763,11 +1763,11 @@ class TestPageEdit(WagtailTestUtils, TestCase):
         """
 
         # save button should be in a <li>
-        self.assertContains(response, "<li>%s</li>" % save_button, html=True)
+        self.assertContains(response, f"<li>{save_button}</li>", html=True)
 
         # publish button should be present, but not in a <li>
         self.assertContains(response, publish_button, html=True)
-        self.assertNotContains(response, "<li>%s</li>" % publish_button, html=True)
+        self.assertNotContains(response, f"<li>{publish_button}</li>", html=True)
 
     def test_edit_alias_page(self):
         alias_page = self.event_page.create_alias(update_slug="new-event-page")
@@ -2267,7 +2267,7 @@ class TestIssue2492(WagtailTestUtils, TestCase):
 
         # The "View Live" button should have the custom URL.
         for message in response.context["messages"]:
-            self.assertIn('"{}"'.format(new_url), message.message)
+            self.assertIn(f'"{new_url}"', message.message)
             break
 
 

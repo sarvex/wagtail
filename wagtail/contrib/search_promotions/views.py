@@ -79,44 +79,43 @@ def index(request):
 
 def save_searchpicks(query, new_query, searchpicks_formset):
     # Save
-    if searchpicks_formset.is_valid():
-        # Set sort_order
-        for i, form in enumerate(searchpicks_formset.ordered_forms):
-            form.instance.sort_order = i
-
-            # Make sure the form is marked as changed so it gets saved with the new order
-            form.has_changed = lambda: True
-
-        # log deleted items before saving, otherwise we lose their IDs
-        items_for_deletion = [
-            form.instance
-            for form in searchpicks_formset.deleted_forms
-            if form.instance.pk
-        ]
-        with transaction.atomic():
-            for search_pick in items_for_deletion:
-                log(search_pick, "wagtail.delete")
-
-            searchpicks_formset.save()
-
-            for search_pick in searchpicks_formset.new_objects:
-                log(search_pick, "wagtail.create")
-
-            # If query was changed, move all search picks to the new query
-            if query != new_query:
-                searchpicks_formset.get_queryset().update(query=new_query)
-                # log all items in the formset as having changed
-                for search_pick, changed_fields in searchpicks_formset.changed_objects:
-                    log(search_pick, "wagtail.edit")
-            else:
-                # only log objects with actual changes
-                for search_pick, changed_fields in searchpicks_formset.changed_objects:
-                    if changed_fields:
-                        log(search_pick, "wagtail.edit")
-
-        return True
-    else:
+    if not searchpicks_formset.is_valid():
         return False
+    # Set sort_order
+    for i, form in enumerate(searchpicks_formset.ordered_forms):
+        form.instance.sort_order = i
+
+        # Make sure the form is marked as changed so it gets saved with the new order
+        form.has_changed = lambda: True
+
+    # log deleted items before saving, otherwise we lose their IDs
+    items_for_deletion = [
+        form.instance
+        for form in searchpicks_formset.deleted_forms
+        if form.instance.pk
+    ]
+    with transaction.atomic():
+        for search_pick in items_for_deletion:
+            log(search_pick, "wagtail.delete")
+
+        searchpicks_formset.save()
+
+        for search_pick in searchpicks_formset.new_objects:
+            log(search_pick, "wagtail.create")
+
+        # If query was changed, move all search picks to the new query
+        if query != new_query:
+            searchpicks_formset.get_queryset().update(query=new_query)
+            # log all items in the formset as having changed
+            for search_pick, changed_fields in searchpicks_formset.changed_objects:
+                log(search_pick, "wagtail.edit")
+        else:
+            # only log objects with actual changes
+            for search_pick, changed_fields in searchpicks_formset.changed_objects:
+                if changed_fields:
+                    log(search_pick, "wagtail.edit")
+
+    return True
 
 
 @permission_required("wagtailsearchpromotions.add_searchpromotion")
@@ -148,12 +147,7 @@ def add(request):
             else:
                 if len(searchpicks_formset.non_form_errors()):
                     # formset level error (e.g. no forms submitted)
-                    messages.error(
-                        request,
-                        " ".join(
-                            error for error in searchpicks_formset.non_form_errors()
-                        ),
-                    )
+                    messages.error(request, " ".join(searchpicks_formset.non_form_errors()))
                 else:
                     # specific errors will be displayed within form fields
                     messages.error(
@@ -207,13 +201,8 @@ def edit(request, query_id):
                 return redirect("wagtailsearchpromotions:index")
             else:
                 if len(searchpicks_formset.non_form_errors()):
-                    messages.error(
-                        request,
-                        " ".join(
-                            error for error in searchpicks_formset.non_form_errors()
-                        ),
-                    )
-                    # formset level error (e.g. no forms submitted)
+                    messages.error(request, " ".join(searchpicks_formset.non_form_errors()))
+                                    # formset level error (e.g. no forms submitted)
                 else:
                     messages.error(
                         request, _("Recommendations have not been saved due to errors")

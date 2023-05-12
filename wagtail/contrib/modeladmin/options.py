@@ -157,11 +157,10 @@ class ModelAdmin(WagtailRegisterable):
         """
         if not self.model or not issubclass(self.model, Model):
             raise ImproperlyConfigured(
-                "The model attribute on your '%s' class must be set, and "
-                "must be a valid Django model." % self.__class__.__name__
+                f"The model attribute on your '{self.__class__.__name__}' class must be set, and must be a valid Django model."
             )
-        self.opts = self.model._meta
         self.is_pagemodel = issubclass(self.model, Page)
+        self.opts = self.model._meta
         self.parent = parent
         self.permission_helper = self.get_permission_helper_class()(
             self.model, self.inspect_view_enabled
@@ -180,16 +179,12 @@ class ModelAdmin(WagtailRegisterable):
         """
         if self.permission_helper_class:
             return self.permission_helper_class
-        if self.is_pagemodel:
-            return PagePermissionHelper
-        return PermissionHelper
+        return PagePermissionHelper if self.is_pagemodel else PermissionHelper
 
     def get_url_helper_class(self):
         if self.url_helper_class:
             return self.url_helper_class
-        if self.is_pagemodel:
-            return PageAdminURLHelper
-        return AdminURLHelper
+        return PageAdminURLHelper if self.is_pagemodel else AdminURLHelper
 
     def get_button_helper_class(self):
         """
@@ -198,9 +193,7 @@ class ModelAdmin(WagtailRegisterable):
         """
         if self.button_helper_class:
             return self.button_helper_class
-        if self.is_pagemodel:
-            return PageButtonHelper
-        return ButtonHelper
+        return PageButtonHelper if self.is_pagemodel else ButtonHelper
 
     def get_menu_label(self):
         """
@@ -223,9 +216,7 @@ class ModelAdmin(WagtailRegisterable):
         """
         if self.menu_icon:
             return self.menu_icon
-        if self.is_pagemodel:
-            return "doc-full-inverse"
-        return "snippet"
+        return "doc-full-inverse" if self.is_pagemodel else "snippet"
 
     def get_menu_order(self):
         """
@@ -294,8 +285,7 @@ class ModelAdmin(WagtailRegisterable):
         admin site.
         """
         qs = self.model._default_manager.get_queryset()
-        ordering = self.get_ordering(request)
-        if ordering:
+        if ordering := self.get_ordering(request):
             qs = qs.order_by(*ordering)
         if self.is_pagemodel:
             # If we're listing pages, exclude the root page
@@ -392,14 +382,13 @@ class ModelAdmin(WagtailRegisterable):
         'inspect_view_fields_exclude' not being included.
         """
         if not self.inspect_view_fields:
-            found_fields = []
-            for f in self.model._meta.get_fields():
-                if f.name not in self.inspect_view_fields_exclude:
-                    if f.concrete and (
-                        not f.is_relation or (not f.auto_created and f.related_model)
-                    ):
-                        found_fields.append(f.name)
-            return found_fields
+            return [
+                f.name
+                for f in self.model._meta.get_fields()
+                if f.name not in self.inspect_view_fields_exclude
+                and f.concrete
+                and (not f.is_relation or (not f.auto_created and f.related_model))
+            ]
         return self.inspect_view_fields
 
     def index_view(self, request):
@@ -507,9 +496,9 @@ class ModelAdmin(WagtailRegisterable):
         app_label = self.opts.app_label.lower()
         model_name = self.opts.model_name.lower()
         return [
-            "modeladmin/%s/%s/%s.html" % (app_label, model_name, action),
-            "modeladmin/%s/%s.html" % (app_label, action),
-            "modeladmin/%s.html" % (action,),
+            f"modeladmin/{app_label}/{model_name}/{action}.html",
+            f"modeladmin/{app_label}/{action}.html",
+            f"modeladmin/{action}.html",
         ]
 
     def get_index_template(self):
@@ -698,8 +687,9 @@ class ModelAdminGroup(WagtailRegisterable):
         access later
         """
         self.modeladmin_instances = []
-        for ModelAdminClass in self.items:
-            self.modeladmin_instances.append(ModelAdminClass(parent=self))
+        self.modeladmin_instances.extend(
+            ModelAdminClass(parent=self) for ModelAdminClass in self.items
+        )
 
     def get_menu_label(self):
         return self.menu_label or self.get_app_label_from_subitems()
@@ -729,12 +719,12 @@ class ModelAdminGroup(WagtailRegisterable):
             return GroupMenuItem(self, self.get_menu_order(), submenu)
 
     def get_submenu_items(self):
-        menu_items = []
-        item_order = 1
-        for modeladmin in self.modeladmin_instances:
-            menu_items.append(modeladmin.get_menu_item(order=item_order))
-            item_order += 1
-        return menu_items
+        return [
+            modeladmin.get_menu_item(order=item_order)
+            for item_order, modeladmin in enumerate(
+                self.modeladmin_instances, start=1
+            )
+        ]
 
     def get_permissions_for_registration(self):
         """

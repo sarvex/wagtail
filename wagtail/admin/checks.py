@@ -38,24 +38,16 @@ def base_form_class_check(app_configs, **kwargs):
     from wagtail.admin.forms import WagtailAdminPageForm
     from wagtail.models import get_page_models
 
-    errors = []
-
-    for cls in get_page_models():
-        if not issubclass(cls.base_form_class, WagtailAdminPageForm):
-            errors.append(
-                Error(
-                    "{}.base_form_class does not extend WagtailAdminPageForm".format(
-                        cls.__name__
-                    ),
-                    hint="Ensure that {}.{} extends WagtailAdminPageForm".format(
-                        cls.base_form_class.__module__, cls.base_form_class.__name__
-                    ),
-                    obj=cls,
-                    id="wagtailadmin.E001",
-                )
-            )
-
-    return errors
+    return [
+        Error(
+            f"{cls.__name__}.base_form_class does not extend WagtailAdminPageForm",
+            hint=f"Ensure that {cls.base_form_class.__module__}.{cls.base_form_class.__name__} extends WagtailAdminPageForm",
+            obj=cls,
+            id="wagtailadmin.E001",
+        )
+        for cls in get_page_models()
+        if not issubclass(cls.base_form_class, WagtailAdminPageForm)
+    ]
 
 
 @register(Tags.admin)
@@ -142,9 +134,7 @@ def check_panels_in_model(cls, context="model"):
             continue
 
         panel_name_short = panel_name.replace("_panels", "").title()
-        error_title = "{}.{} will have no effect on {} editing".format(
-            class_name, panel_name, context
-        )
+        error_title = f"{class_name}.{panel_name} will have no effect on {context} editing"
 
         if "InlinePanel" in context:
             error_hint = """Ensure that {} uses `panels` instead of `{}`.

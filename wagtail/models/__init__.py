@@ -187,34 +187,27 @@ PageManager = BasePageManager.from_queryset(PageQuerySet)
 class PageBase(models.base.ModelBase):
     """Metaclass for Page"""
 
-    def __init__(cls, name, bases, dct):
-        super(PageBase, cls).__init__(name, bases, dct)
+    def __init__(self, name, bases, dct):
+        super(PageBase, self).__init__(name, bases, dct)
 
         if "template" not in dct:
             # Define a default template path derived from the app name and model name
-            cls.template = "%s/%s.html" % (
-                cls._meta.app_label,
-                camelcase_to_underscore(name),
-            )
+            self.template = f"{self._meta.app_label}/{camelcase_to_underscore(name)}.html"
 
         if "ajax_template" not in dct:
-            cls.ajax_template = None
+            self.ajax_template = None
 
-        cls._clean_subpage_models = (
-            None  # to be filled in on first call to cls.clean_subpage_models
-        )
-        cls._clean_parent_page_models = (
-            None  # to be filled in on first call to cls.clean_parent_page_models
-        )
+        self._clean_subpage_models = None
+        self._clean_parent_page_models = None
 
         # All pages should be creatable unless explicitly set otherwise.
         # This attribute is not inheritable.
         if "is_creatable" not in dct:
-            cls.is_creatable = not cls._meta.abstract
+            self.is_creatable = not self._meta.abstract
 
-        if not cls._meta.abstract:
+        if not self._meta.abstract:
             # register this type in the list of page content types
-            PAGE_MODEL_CLASSES.append(cls)
+            PAGE_MODEL_CLASSES.append(self)
 
 
 class RevisionMixin(models.Model):
@@ -253,10 +246,7 @@ class RevisionMixin(models.Model):
         )
 
     def get_base_content_type(self):
-        parents = self._meta.get_parent_list()
-        # Get the last non-abstract parent in the MRO as the base_content_type.
-        # Note: for_concrete_model=False means that the model can be a proxy model.
-        if parents:
+        if parents := self._meta.get_parent_list():
             return ContentType.objects.get_for_model(
                 parents[-1], for_concrete_model=False
             )
@@ -275,8 +265,7 @@ class RevisionMixin(models.Model):
         Returns the latest revision of the object as an instance of the model.
         If no latest revision exists, returns the object itself.
         """
-        latest_revision = self.get_latest_revision()
-        if latest_revision:
+        if latest_revision := self.get_latest_revision():
             return latest_revision.as_object()
         return self
 
@@ -476,20 +465,20 @@ class DraftStateMixin(models.Model):
 
     @property
     def status_string(self):
-        if not self.live:
-            if self.expired:
-                return _("expired")
-            elif self.approved_schedule:
-                return _("scheduled")
-            else:
-                return _("draft")
-        else:
+        if self.live:
             if self.approved_schedule:
                 return _("live + scheduled")
             elif self.has_unpublished_changes:
                 return _("live + draft")
             else:
                 return _("live")
+
+        elif self.expired:
+            return _("expired")
+        elif self.approved_schedule:
+            return _("scheduled")
+        else:
+            return _("draft")
 
     def publish(
         self,
@@ -565,9 +554,7 @@ class DraftStateMixin(models.Model):
             #    objects would be recreated with new IDs on next publish - see #1853)
             return self
 
-        latest_revision = self.get_latest_revision()
-
-        if latest_revision:
+        if latest_revision := self.get_latest_revision():
             return latest_revision.as_object()
         else:
             return self
@@ -650,8 +637,7 @@ class PreviewableMixin:
         Return a dict of META information to be included in a faked HttpRequest object to pass to
         serve_preview.
         """
-        url = self._get_dummy_header_url(original_request)
-        if url:
+        if url := self._get_dummy_header_url(original_request):
             url_info = urlparse(url)
             hostname = url_info.hostname
             path = url_info.path
@@ -674,7 +660,7 @@ class PreviewableMixin:
 
         http_host = hostname
         if port != (443 if scheme == "https" else 80):
-            http_host = "%s:%s" % (http_host, port)
+            http_host = f"{http_host}:{port}"
         dummy_values = {
             "REQUEST_METHOD": "GET",
             "PATH_INFO": path,
@@ -786,8 +772,7 @@ class PreviewableMixin:
         rendering logic.
         """
         raise ImproperlyConfigured(
-            "%s (subclass of PreviewableMixin) must override get_preview_template or serve_preview"
-            % type(self).__name__
+            f"{type(self).__name__} (subclass of PreviewableMixin) must override get_preview_template or serve_preview"
         )
 
 
@@ -918,16 +903,14 @@ class WorkflowMixin:
             return None
 
         content_type = ContentType.objects.get_for_model(cls, for_concrete_model=False)
-        workflow_content_type = (
+        if workflow_content_type := (
             WorkflowContentType.objects.filter(
                 workflow__active=True,
                 content_type=content_type,
             )
             .select_related("workflow")
             .first()
-        )
-
-        if workflow_content_type:
+        ):
             return workflow_content_type.workflow
         return None
 
@@ -964,11 +947,10 @@ class WorkflowMixin:
         # `_current_workflow_states` may be populated by `prefetch_workflow_states`
         # on querysets as a performance optimisation
         if hasattr(self, "_current_workflow_states"):
-            for state in self._current_workflow_states:
-                if state.status == WorkflowState.STATUS_IN_PROGRESS:
-                    return True
-            return False
-
+            return any(
+                state.status == WorkflowState.STATUS_IN_PROGRESS
+                for state in self._current_workflow_states
+            )
         return self.workflow_states.filter(
             status=WorkflowState.STATUS_IN_PROGRESS
         ).exists()
@@ -1007,22 +989,12 @@ class WorkflowMixin:
     @property
     def current_workflow_task(self):
         """Returns (specific class of) the current task in progress on this object, if it exists."""
-        current_workflow_task_state = self.current_workflow_task_state
-        if current_workflow_task_state:
+        if current_workflow_task_state := self.current_workflow_task_state:
             return current_workflow_task_state.task.specific
 
     @property
     def status_string(self):
-        if not self.live:
-            if self.expired:
-                return _("expired")
-            elif self.approved_schedule:
-                return _("scheduled")
-            elif self.workflow_in_progress:
-                return _("in moderation")
-            else:
-                return _("draft")
-        else:
+        if self.live:
             if self.approved_schedule:
                 return _("live + scheduled")
             elif self.workflow_in_progress:
@@ -1032,15 +1004,20 @@ class WorkflowMixin:
             else:
                 return _("live")
 
+        elif self.expired:
+            return _("expired")
+        elif self.approved_schedule:
+            return _("scheduled")
+        elif self.workflow_in_progress:
+            return _("in moderation")
+        else:
+            return _("draft")
+
     def get_lock(self):
-        # Standard locking should take precedence over workflow locking
-        # because it's possible for both to be used at the same time
-        lock = super().get_lock()
-        if lock:
+        if lock := super().get_lock():
             return lock
 
-        current_workflow_task = self.current_workflow_task
-        if current_workflow_task:
+        if current_workflow_task := self.current_workflow_task:
             return WorkflowLock(self, current_workflow_task)
 
 
@@ -1248,12 +1225,7 @@ class Page(AbstractPage, index.Indexed, ClusterableModel, metaclass=PageBase):
         new unsaved pages a meaningful URL when previewing them; at that point the page has not
         been assigned a position in the tree, as far as treebeard is concerned.
         """
-        if parent:
-            self.url_path = parent.url_path + self.slug + "/"
-        else:
-            # a page without a parent is the tree root, which always has a url_path of '/'
-            self.url_path = "/"
-
+        self.url_path = parent.url_path + self.slug + "/" if parent else "/"
         return self.url_path
 
     @staticmethod
@@ -1308,10 +1280,7 @@ class Page(AbstractPage, index.Indexed, ClusterableModel, metaclass=PageBase):
         if not self.slug:
             # Try to auto-populate slug from title
             allow_unicode = getattr(settings, "WAGTAIL_ALLOW_UNICODE_SLUGS", True)
-            base_slug = slugify(self.title, allow_unicode=allow_unicode)
-
-            # only proceed if we get a non-empty base slug back from slugify
-            if base_slug:
+            if base_slug := slugify(self.title, allow_unicode=allow_unicode):
                 self.slug = self._get_autogenerated_slug(base_slug)
 
         if not self.draft_title:
@@ -1352,7 +1321,6 @@ class Page(AbstractPage, index.Indexed, ClusterableModel, metaclass=PageBase):
         ).exists()
 
     @transaction.atomic
-    # ensure that changes are only committed when we have updated all descendant URL paths, to preserve consistency
     def save(self, clean=True, user=None, log_action=False, **kwargs):
         """
         Overrides default method behaviour to make additional updates unique to pages,
@@ -1372,29 +1340,24 @@ class Page(AbstractPage, index.Indexed, ClusterableModel, metaclass=PageBase):
         if clean:
             self.full_clean()
 
-        slug_changed = False
         is_new = self.id is None
 
+        slug_changed = False
         if is_new:
             # we are creating a record. If we're doing things properly, this should happen
             # through a treebeard method like add_child, in which case the 'path' field
             # has been set and so we can safely call get_parent
             self.set_url_path(self.get_parent())
-        else:
-            # Check that we are committing the slug to the database
-            # Basically: If update_fields has been specified, and slug is not included, skip this step
-            if not (
-                "update_fields" in kwargs and "slug" not in kwargs["update_fields"]
-            ):
-                # see if the slug has changed from the record in the db, in which case we need to
-                # update url_path of self and all descendants. Even though we might not need it,
-                # the specific page is fetched here for sending to the 'page_slug_changed' signal.
-                old_record = Page.objects.get(id=self.id).specific
-                if old_record.slug != self.slug:
-                    self.set_url_path(self.get_parent())
-                    slug_changed = True
-                    old_url_path = old_record.url_path
-                    new_url_path = self.url_path
+        elif "update_fields" not in kwargs or "slug" in kwargs["update_fields"]:
+            # see if the slug has changed from the record in the db, in which case we need to
+            # update url_path of self and all descendants. Even though we might not need it,
+            # the specific page is fetched here for sending to the 'page_slug_changed' signal.
+            old_record = Page.objects.get(id=self.id).specific
+            if old_record.slug != self.slug:
+                self.set_url_path(self.get_parent())
+                slug_changed = True
+                old_url_path = old_record.url_path
+                new_url_path = self.url_path
 
         result = super().save(**kwargs)
 
@@ -1427,18 +1390,19 @@ class Page(AbstractPage, index.Indexed, ClusterableModel, metaclass=PageBase):
                 self.url_path,
             )
 
-        if log_action is not None:
             # The default for log_action is False. i.e. don't log unless specifically instructed
             # Page creation is a special case that we want logged by default, but allow skipping it
             # explicitly by passing log_action=None
-            if is_new:
+        if is_new:
+            if log_action is not None:
                 log(
                     instance=self,
                     action="wagtail.create",
                     user=user or self.owner,
                     content_changed=True,
                 )
-            elif log_action:
+        elif log_action:
+            if log_action is not None:
                 log(instance=self, action=log_action, user=user)
 
         return result
@@ -1467,16 +1431,15 @@ class Page(AbstractPage, index.Indexed, ClusterableModel, metaclass=PageBase):
             if (
                 isinstance(field, models.ForeignKey)
                 and field.name not in field_exceptions
-            ):
-                if field.remote_field.on_delete == models.CASCADE:
-                    errors.append(
-                        checks.Warning(
-                            "Field hasn't specified on_delete action",
-                            hint="Set on_delete=models.SET_NULL and make sure the field is nullable or set on_delete=models.PROTECT. Wagtail does not allow simple database CASCADE because it will corrupt its tree storage.",
-                            obj=field,
-                            id="wagtailcore.W001",
-                        )
+            ) and field.remote_field.on_delete == models.CASCADE:
+                errors.append(
+                    checks.Warning(
+                        "Field hasn't specified on_delete action",
+                        hint="Set on_delete=models.SET_NULL and make sure the field is nullable or set on_delete=models.PROTECT. Wagtail does not allow simple database CASCADE because it will corrupt its tree storage.",
+                        obj=field,
+                        id="wagtailcore.W001",
                     )
+                )
 
         if not isinstance(cls.objects, PageManager):
             errors.append(
@@ -1493,7 +1456,7 @@ class Page(AbstractPage, index.Indexed, ClusterableModel, metaclass=PageBase):
         except (ValueError, LookupError) as e:
             errors.append(
                 checks.Error(
-                    "Invalid subpage_types setting for %s" % cls,
+                    f"Invalid subpage_types setting for {cls}",
                     hint=str(e),
                     id="wagtailcore.E002",
                 )
@@ -1504,7 +1467,7 @@ class Page(AbstractPage, index.Indexed, ClusterableModel, metaclass=PageBase):
         except (ValueError, LookupError) as e:
             errors.append(
                 checks.Error(
-                    "Invalid parent_page_types setting for %s" % cls,
+                    f"Invalid parent_page_types setting for {cls}",
                     hint=str(e),
                     id="wagtailcore.E002",
                 )
@@ -1798,9 +1761,7 @@ class Page(AbstractPage, index.Indexed, ClusterableModel, metaclass=PageBase):
             #    objects would be recreated with new IDs on next publish - see #1853)
             return self.specific
 
-        latest_revision = self.get_latest_revision()
-
-        if latest_revision:
+        if latest_revision := self.get_latest_revision():
             return latest_revision.as_object()
         else:
             return self.specific
@@ -2054,8 +2015,7 @@ class Page(AbstractPage, index.Indexed, ClusterableModel, metaclass=PageBase):
 
         site_id, root_path, root_url, language_code = possible_sites[0]
 
-        site = Site.find_for_request(request)
-        if site:
+        if site := Site.find_for_request(request):
             for site_id, root_path, root_url, language_code in possible_sites:
                 if site_id == site.pk:
                     break
@@ -2220,7 +2180,7 @@ class Page(AbstractPage, index.Indexed, ClusterableModel, metaclass=PageBase):
 
                 for model in cls._clean_subpage_models:
                     if not issubclass(model, Page):
-                        raise LookupError("%s is not a Page subclass" % model)
+                        raise LookupError(f"{model} is not a Page subclass")
 
         return cls._clean_subpage_models
 
@@ -2245,7 +2205,7 @@ class Page(AbstractPage, index.Indexed, ClusterableModel, metaclass=PageBase):
 
                 for model in cls._clean_parent_page_models:
                     if not issubclass(model, Page):
-                        raise LookupError("%s is not a Page subclass" % model)
+                        raise LookupError(f"{model} is not a Page subclass")
 
         return cls._clean_parent_page_models
 
@@ -2690,19 +2650,18 @@ class Page(AbstractPage, index.Indexed, ClusterableModel, metaclass=PageBase):
 
         if hasattr(self, "workflowpage") and self.workflowpage.workflow.active:
             return self.workflowpage.workflow
-        else:
-            try:
-                workflow = (
-                    self.get_ancestors()
-                    .filter(workflowpage__isnull=False)
-                    .filter(workflowpage__workflow__active=True)
-                    .order_by("-depth")
-                    .first()
-                    .workflowpage.workflow
-                )
-            except AttributeError:
-                workflow = None
-            return workflow
+        try:
+            workflow = (
+                self.get_ancestors()
+                .filter(workflowpage__isnull=False)
+                .filter(workflowpage__workflow__active=True)
+                .order_by("-depth")
+                .first()
+                .workflowpage.workflow
+            )
+        except AttributeError:
+            workflow = None
+        return workflow
 
     class Meta:
         verbose_name = _("page")
@@ -2944,7 +2903,7 @@ class Revision(models.Model):
         )
 
     def __str__(self):
-        return '"' + str(self.content_object) + '" at ' + str(self.created_at)
+        return f'"{str(self.content_object)}" at {str(self.created_at)}'
 
     class Meta:
         verbose_name = _("revision")
@@ -3203,8 +3162,7 @@ class PagePermissionTester:
         if "add" in self.permissions and self.page.owner_id == self.user.pk:
             return True
 
-        current_workflow_task = self.page.current_workflow_task
-        if current_workflow_task:
+        if current_workflow_task := self.page.current_workflow_task:
             if current_workflow_task.user_can_access_editor(self.page, self.user):
                 return True
 
@@ -3289,14 +3247,10 @@ class PagePermissionTester:
     def can_lock(self):
         if self.user.is_superuser:
             return True
-        current_workflow_task = self.page.current_workflow_task
-        if current_workflow_task:
+        if current_workflow_task := self.page.current_workflow_task:
             return current_workflow_task.user_can_lock(self.page, self.user)
 
-        if "lock" in self.permissions:
-            return True
-
-        return False
+        return "lock" in self.permissions
 
     def can_unlock(self):
         if self.user.is_superuser:
@@ -3305,14 +3259,10 @@ class PagePermissionTester:
         if self.user_has_lock():
             return True
 
-        current_workflow_task = self.page.current_workflow_task
-        if current_workflow_task:
+        if current_workflow_task := self.page.current_workflow_task:
             return current_workflow_task.user_can_unlock(self.page, self.user)
 
-        if "unlock" in self.permissions:
-            return True
-
-        return False
+        return "unlock" in self.permissions
 
     def can_publish_subpage(self):
         """
@@ -3408,10 +3358,7 @@ class PagePermissionTester:
             return False
 
         # we always need at least add permission in the target
-        if "add" not in destination_perms.permissions:
-            return False
-
-        return True
+        return "add" in destination_perms.permissions
 
     def can_view_revisions(self):
         return not self.page_is_root
@@ -3464,8 +3411,7 @@ class PageViewRestriction(BaseViewRestriction):
         :param user: the user removing the view restriction
         :param specific_instance: the specific model instance the restriction applies to
         """
-        specific_instance = self.page.specific
-        if specific_instance:
+        if specific_instance := self.page.specific:
             log(
                 instance=specific_instance,
                 action="wagtail.view_restriction.delete",
@@ -3591,13 +3537,10 @@ class Task(models.Model):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if not self.id:
-            # this model is being newly created
-            # rather than retrieved from the db;
-            if not self.content_type_id:
-                # set content type to correctly represent the model class
-                # that this was created as
-                self.content_type = ContentType.objects.get_for_model(self)
+        if not self.id and not self.content_type_id:
+            # set content type to correctly represent the model class
+            # that this was created as
+            self.content_type = ContentType.objects.get_for_model(self)
 
     def __str__(self):
         return self.name
@@ -3630,15 +3573,12 @@ class Task(models.Model):
         # avoid a database lookup over doing self.content_type. I think.
         content_type = ContentType.objects.get_for_id(self.content_type_id)
         model_class = content_type.model_class()
-        if model_class is None:
+        if model_class is None or isinstance(self, model_class):
             # Cannot locate a model class for this content type. This might happen
             # if the codebase and database are out of sync (e.g. the model exists
             # on a different git branch and we haven't rolled back migrations before
             # switching branches); if so, the best we can do is return the task
             # unchanged.
-            return self
-        elif isinstance(self, model_class):
-            # self is already the an instance of the most specific class
             return self
         else:
             return content_type.get_object_for_this_type(id=self.id)
@@ -3646,8 +3586,8 @@ class Task(models.Model):
     task_state_class = None
 
     @classmethod
-    def get_task_state_class(self):
-        return self.task_state_class or TaskState
+    def get_task_state_class(cls):
+        return cls.task_state_class or TaskState
 
     def start(self, workflow_state, user=None):
         """Start this task on the provided workflow state by creating an instance of TaskState"""
@@ -3854,17 +3794,15 @@ class GroupApprovalTask(Task):
         if (
             isinstance(workflow_state.content_object, LockableMixin)
             and workflow_state.content_object.locked_by
-        ):
-            # If the person who locked the object isn't in one of the groups, unlock the object
-            if not workflow_state.content_object.locked_by.groups.filter(
-                id__in=self.groups.all()
-            ).exists():
-                workflow_state.content_object.locked = False
-                workflow_state.content_object.locked_by = None
-                workflow_state.content_object.locked_at = None
-                workflow_state.content_object.save(
-                    update_fields=["locked", "locked_by", "locked_at"]
-                )
+        ) and not workflow_state.content_object.locked_by.groups.filter(
+            id__in=self.groups.all()
+        ).exists():
+            workflow_state.content_object.locked = False
+            workflow_state.content_object.locked_by = None
+            workflow_state.content_object.locked_at = None
+            workflow_state.content_object.save(
+                update_fields=["locked", "locked_by", "locked_at"]
+            )
 
         return super().start(workflow_state, user=user)
 
@@ -4015,22 +3953,23 @@ class WorkflowState(models.Model):
     def clean(self):
         super().clean()
 
-        if self.status in (self.STATUS_IN_PROGRESS, self.STATUS_NEEDS_CHANGES):
-            # The unique constraint is conditional, and so not supported on the MySQL backend - so an additional check is done here
-            if (
-                WorkflowState.objects.active()
-                .filter(
-                    base_content_type_id=self.base_content_type_id,
-                    object_id=self.object_id,
+        if self.status in (
+            self.STATUS_IN_PROGRESS,
+            self.STATUS_NEEDS_CHANGES,
+        ) and (
+            WorkflowState.objects.active()
+            .filter(
+                base_content_type_id=self.base_content_type_id,
+                object_id=self.object_id,
+            )
+            .exclude(pk=self.pk)
+            .exists()
+        ):
+            raise ValidationError(
+                _(
+                    "There may only be one in progress or needs changes workflow state per page/snippet."
                 )
-                .exclude(pk=self.pk)
-                .exists()
-            ):
-                raise ValidationError(
-                    _(
-                        "There may only be one in progress or needs changes workflow state per page/snippet."
-                    )
-                )
+            )
 
     def save(self, *args, **kwargs):
         self.full_clean()
@@ -4131,13 +4070,13 @@ class WorkflowState(models.Model):
                     # not STATUS_IN_PROGRESS), move to the next task
                     self.current_task_state = next_task.specific.start(self, user=user)
                     self.save()
-                    # if task has auto-approved, update the workflow again
-                    if (
-                        self.current_task_state.status
-                        != self.current_task_state.STATUS_IN_PROGRESS
-                    ):
-                        self.update(user=user)
-                # otherwise, continue on the current task
+                # if task has auto-approved, update the workflow again
+                if (
+                    self.current_task_state.status
+                    != self.current_task_state.STATUS_IN_PROGRESS
+                ):
+                    self.update(user=user)
+                        # otherwise, continue on the current task
             else:
                 # if there is no uncompleted task, finish the workflow.
                 self.finish(user=user)
@@ -4436,13 +4375,10 @@ class TaskState(models.Model):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if not self.id:
-            # this model is being newly created
-            # rather than retrieved from the db;
-            if not self.content_type_id:
-                # set content type to correctly represent the model class
-                # that this was created as
-                self.content_type = ContentType.objects.get_for_model(self)
+        if not self.id and not self.content_type_id:
+            # set content type to correctly represent the model class
+            # that this was created as
+            self.content_type = ContentType.objects.get_for_model(self)
 
     def __str__(self):
         return _("Task '%(task_name)s' on Revision '%(revision_info)s': %(status)s") % {
@@ -4460,15 +4396,12 @@ class TaskState(models.Model):
         # avoid a database lookup over doing self.content_type. I think.
         content_type = ContentType.objects.get_for_id(self.content_type_id)
         model_class = content_type.model_class()
-        if model_class is None:
+        if model_class is None or isinstance(self, model_class):
             # Cannot locate a model class for this content type. This might happen
             # if the codebase and database are out of sync (e.g. the model exists
             # on a different git branch and we haven't rolled back migrations before
             # switching branches); if so, the best we can do is return the task state
             # unchanged.
-            return self
-        elif isinstance(self, model_class):
-            # self is already the an instance of the most specific class
             return self
         else:
             return content_type.get_object_for_this_type(id=self.id)
@@ -4571,13 +4504,13 @@ class TaskState(models.Model):
     def log_state_change_action(self, user, action):
         """Log the approval/rejection action"""
         obj = self.revision.as_object()
-        next_task = self.workflow_state.get_next_task()
-        next_task_data = None
-        if next_task:
+        if next_task := self.workflow_state.get_next_task():
             next_task_data = {"id": next_task.id, "title": next_task.name}
+        else:
+            next_task_data = None
         log(
             instance=obj,
-            action="wagtail.workflow.{}".format(action),
+            action=f"wagtail.workflow.{action}",
             user=user,
             data={
                 "workflow": {
@@ -4605,10 +4538,7 @@ class PageLogEntryQuerySet(LogEntryQuerySet):
     def get_content_type_ids(self):
         # for reporting purposes, pages of all types are combined under a single "Page"
         # object type
-        if self.exists():
-            return {ContentType.objects.get_for_model(Page).pk}
-        else:
-            return set()
+        return {ContentType.objects.get_for_model(Page).pk} if self.exists() else set()
 
     def filter_on_content_type(self, content_type):
         if content_type == ContentType.objects.get_for_model(Page):
@@ -4681,10 +4611,7 @@ class PageLogEntry(BaseLogEntry):
     @cached_property
     def message(self):
         # for page log entries, the 'edit' action should show as 'Draft saved'
-        if self.action == "wagtail.edit":
-            return _("Draft saved")
-        else:
-            return super().message
+        return _("Draft saved") if self.action == "wagtail.edit" else super().message
 
 
 class Comment(ClusterableModel):

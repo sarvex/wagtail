@@ -30,12 +30,10 @@ class TestIssue613(WagtailTestUtils, TestCase):
         fake_file = ContentFile(b"A boring example document")
         fake_file.name = "test.txt"
 
-        # Submit
         post_data = {
             "title": "Test document",
             "file": fake_file,
-        }
-        post_data.update(params)
+        } | params
         response = self.client.post(reverse("wagtaildocs:add"), post_data)
 
         # User should be redirected back to the index
@@ -58,12 +56,10 @@ class TestIssue613(WagtailTestUtils, TestCase):
         another_fake_file = ContentFile(b"A boring example document")
         another_fake_file.name = "test.txt"
 
-        # Submit
         post_data = {
             "title": "Test document changed!",
             "file": another_fake_file,
-        }
-        post_data.update(params)
+        } | params
         response = self.client.post(
             reverse("wagtaildocs:edit", args=(document.id,)), post_data
         )

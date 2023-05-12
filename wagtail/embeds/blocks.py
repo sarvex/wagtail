@@ -57,17 +57,11 @@ class EmbedBlock(blocks.URLBlock):
 
     def get_prep_value(self, value):
         # serialisable value should be a URL string
-        if value is None:
-            return ""
-        else:
-            return value.url
+        return "" if value is None else value.url
 
     def value_for_form(self, value):
         # the value to be handled by the URLField is a plain URL string (or the empty string)
-        if value is None:
-            return ""
-        else:
-            return value.url
+        return "" if value is None else value.url
 
     def value_from_form(self, value):
         # convert the value returned from the form (a URL string) to an EmbedValue (or None)

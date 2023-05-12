@@ -22,7 +22,7 @@ class AdminDateInput(widgets.DateInput):
         default_attrs = {"autocomplete": "off"}
         fmt = format
         if attrs:
-            default_attrs.update(attrs)
+            default_attrs |= attrs
         if fmt is None:
             fmt = getattr(settings, "WAGTAIL_DATE_FORMAT", DEFAULT_DATE_FORMAT)
         self.js_format = to_datetimepicker_format(fmt)
@@ -68,7 +68,7 @@ class AdminTimeInput(widgets.TimeInput):
     def __init__(self, attrs=None, format=None):
         default_attrs = {"autocomplete": "off"}
         if attrs:
-            default_attrs.update(attrs)
+            default_attrs |= attrs
         fmt = format
         if fmt is None:
             fmt = getattr(settings, "WAGTAIL_TIME_FORMAT", DEFAULT_TIME_FORMAT)
@@ -117,7 +117,7 @@ class AdminDateTimeInput(widgets.DateTimeInput):
         default_attrs = {"autocomplete": "off"}
         fmt = format
         if attrs:
-            default_attrs.update(attrs)
+            default_attrs |= attrs
         if fmt is None:
             fmt = getattr(settings, "WAGTAIL_DATETIME_FORMAT", DEFAULT_DATETIME_FORMAT)
         time_fmt = time_format

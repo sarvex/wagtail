@@ -37,7 +37,7 @@ def shared_context(request, extra_context=None):
         "allow_anchor_link": request.GET.get("allow_anchor_link"),
     }
     if extra_context:
-        context.update(extra_context)
+        context |= extra_context
     return context
 
 
@@ -77,7 +77,7 @@ def can_choose_page(
     elif (
         match_subclass
         and not issubclass(page.specific_class or Page, desired_classes)
-        and not desired_classes == (Page,)
+        and desired_classes != (Page,)
     ):
         return False
     elif not can_choose_root and page.is_root():
@@ -272,11 +272,11 @@ class BrowseView(View):
             target_pages=target_pages,
             match_subclass=match_subclass,
         )
-        self.parent_page.is_parent_page = True
         self.parent_page.can_descend = False
 
         selected_locale = None
         locale_options = []
+        self.parent_page.is_parent_page = True
         if self.i18n_enabled:
             if self.parent_page.is_root():
                 # 'locale' is the current value of the "Locale" selector in the UI
@@ -293,8 +293,7 @@ class BrowseView(View):
                 locale_options = [
                     {
                         "locale": locale,
-                        "url": choose_url
-                        + "?"
+                        "url": f"{choose_url}?"
                         + urlencode(
                             {
                                 "page_type": page_type_string,
@@ -328,8 +327,7 @@ class BrowseView(View):
                     locale_options.append(
                         {
                             "locale": locale,
-                            "url": choose_child_url
-                            + "?"
+                            "url": f"{choose_child_url}?"
                             + urlencode({"page_type": page_type_string}),
                         }
                     )
@@ -549,11 +547,10 @@ class BaseLinkFormView(View):
             request.POST, initial=self.get_initial_data(), prefix=self.form_prefix
         )
 
-        if self.form.is_valid():
-            result = self.get_result_data()
-            return self.render_chosen_response(result)
-        else:  # form invalid
+        if not self.form.is_valid():
             return self.render_form_response()
+        result = self.get_result_data()
+        return self.render_chosen_response(result)
 
     def render_form_response(self):
         return render_modal_workflow(
@@ -598,115 +595,112 @@ class ExternalLinkView(BaseLinkFormView):
             prefix=self.form_prefix,
         )
 
-        if self.form.is_valid():
-            result = self.get_result_data()
-            submitted_url = result["url"]
+        if not self.form.is_valid():
+            return self.render_form_response()
+        result = self.get_result_data()
+        submitted_url = result["url"]
 
-            link_conversion = getattr(
-                settings,
-                "WAGTAILADMIN_EXTERNAL_LINK_CONVERSION",
-                LINK_CONVERSION_ALL,
-            ).lower()
+        link_conversion = getattr(
+            settings,
+            "WAGTAILADMIN_EXTERNAL_LINK_CONVERSION",
+            LINK_CONVERSION_ALL,
+        ).lower()
 
-            if link_conversion not in [
-                LINK_CONVERSION_ALL,
-                LINK_CONVERSION_EXACT,
-                LINK_CONVERSION_CONFIRM,
-            ]:
-                # We should not attempt to convert external urls to page links
-                return self.render_chosen_response(result)
+        if link_conversion not in [
+            LINK_CONVERSION_ALL,
+            LINK_CONVERSION_EXACT,
+            LINK_CONVERSION_CONFIRM,
+        ]:
+            # We should not attempt to convert external urls to page links
+            return self.render_chosen_response(result)
 
-            # Next, we should check if the url matches an internal page
-            # Strip the url of its query/fragment link parameters - these won't match a page
-            url_without_query = re.split(r"\?|#", submitted_url)[0]
+        # Next, we should check if the url matches an internal page
+        # Strip the url of its query/fragment link parameters - these won't match a page
+        url_without_query = re.split(r"\?|#", submitted_url)[0]
 
-            # Start by finding any sites the url could potentially match
-            sites = getattr(request, "_wagtail_cached_site_root_paths", None)
-            if sites is None:
-                sites = Site.get_site_root_paths()
+        # Start by finding any sites the url could potentially match
+        sites = getattr(request, "_wagtail_cached_site_root_paths", None)
+        if sites is None:
+            sites = Site.get_site_root_paths()
 
-            match_relative_paths = submitted_url.startswith("/") and len(sites) == 1
+        match_relative_paths = submitted_url.startswith("/") and len(sites) == 1
             # We should only match relative urls if there's only a single site
             # Otherwise this could get very annoying accidentally matching coincidentally
             # named pages on different sites
 
-            if match_relative_paths:
-                possible_sites = [
-                    (pk, url_without_query) for pk, path, url, language_code in sites
-                ]
-            else:
-                possible_sites = [
-                    (pk, url_without_query[len(url) :])
-                    for pk, path, url, language_code in sites
-                    if submitted_url.startswith(url)
-                ]
+        possible_sites = (
+            [(pk, url_without_query) for pk, path, url, language_code in sites]
+            if match_relative_paths
+            else [
+                (pk, url_without_query[len(url) :])
+                for pk, path, url, language_code in sites
+                if submitted_url.startswith(url)
+            ]
+        )
+        # Loop over possible sites to identify a page match
+        for pk, url in possible_sites:
+            try:
+                route = Site.objects.get(pk=pk).root_page.specific.route(
+                    request,
+                    [component for component in url.split("/") if component],
+                )
 
-            # Loop over possible sites to identify a page match
-            for pk, url in possible_sites:
-                try:
-                    route = Site.objects.get(pk=pk).root_page.specific.route(
-                        request,
-                        [component for component in url.split("/") if component],
-                    )
+                matched_page = route.page.specific
 
-                    matched_page = route.page.specific
+                internal_data = {
+                    "id": matched_page.pk,
+                    "parentId": matched_page.get_parent().pk,
+                    "adminTitle": matched_page.draft_title,
+                    "editUrl": reverse(
+                        "wagtailadmin_pages:edit", args=(matched_page.pk,)
+                    ),
+                    "url": matched_page.url,
+                }
 
-                    internal_data = {
-                        "id": matched_page.pk,
-                        "parentId": matched_page.get_parent().pk,
-                        "adminTitle": matched_page.draft_title,
-                        "editUrl": reverse(
-                            "wagtailadmin_pages:edit", args=(matched_page.pk,)
-                        ),
-                        "url": matched_page.url,
-                    }
+                # Let's check what this page's normal url would be
+                normal_url = (
+                    matched_page.get_url_parts(request=request)[-1]
+                    if match_relative_paths
+                    else matched_page.get_full_url(request=request)
+                )
 
-                    # Let's check what this page's normal url would be
-                    normal_url = (
-                        matched_page.get_url_parts(request=request)[-1]
-                        if match_relative_paths
-                        else matched_page.get_full_url(request=request)
-                    )
+                # If that's what the user provided, great. Let's just convert the external
+                # url to an internal link automatically unless we're set up tp manually check
+                # all conversions
+                if (
+                    normal_url == submitted_url
+                    and link_conversion != LINK_CONVERSION_CONFIRM
+                ):
+                    return self.render_chosen_response(internal_data)
+                # If not, they might lose query parameters or routable page information
 
-                    # If that's what the user provided, great. Let's just convert the external
-                    # url to an internal link automatically unless we're set up tp manually check
-                    # all conversions
-                    if (
-                        normal_url == submitted_url
-                        and link_conversion != LINK_CONVERSION_CONFIRM
-                    ):
-                        return self.render_chosen_response(internal_data)
-                    # If not, they might lose query parameters or routable page information
-
-                    if link_conversion == LINK_CONVERSION_EXACT:
-                        # We should only convert exact matches
-                        continue
-
-                    # Let's confirm the conversion with them explicitly
-                    else:
-                        return render_modal_workflow(
-                            request,
-                            "wagtailadmin/chooser/confirm_external_to_internal.html",
-                            None,
-                            {
-                                "submitted_url": submitted_url,
-                                "internal_url": normal_url,
-                                "page": matched_page.draft_title,
-                            },
-                            json_data={
-                                "step": "confirm_external_to_internal",
-                                "external": result,
-                                "internal": internal_data,
-                            },
-                        )
-
-                except Http404:
+                if link_conversion == LINK_CONVERSION_EXACT:
+                    # We should only convert exact matches
                     continue
 
-            # Otherwise, with no internal matches, fall back to an external url
-            return self.render_chosen_response(result)
-        else:  # form invalid
-            return self.render_form_response()
+                # Let's confirm the conversion with them explicitly
+                else:
+                    return render_modal_workflow(
+                        request,
+                        "wagtailadmin/chooser/confirm_external_to_internal.html",
+                        None,
+                        {
+                            "submitted_url": submitted_url,
+                            "internal_url": normal_url,
+                            "page": matched_page.draft_title,
+                        },
+                        json_data={
+                            "step": "confirm_external_to_internal",
+                            "external": result,
+                            "internal": internal_data,
+                        },
+                    )
+
+            except Http404:
+                continue
+
+        # Otherwise, with no internal matches, fall back to an external url
+        return self.render_chosen_response(result)
 
 
 class AnchorLinkView(BaseLinkFormView):
@@ -717,7 +711,7 @@ class AnchorLinkView(BaseLinkFormView):
     link_url_field_name = "url"
 
     def get_url_from_field_value(self, value):
-        return "#" + value
+        return f"#{value}"
 
 
 class EmailLinkView(BaseLinkFormView):
@@ -728,7 +722,7 @@ class EmailLinkView(BaseLinkFormView):
     link_url_field_name = "email_address"
 
     def get_url_from_field_value(self, value):
-        return "mailto:" + value
+        return f"mailto:{value}"
 
 
 class PhoneLinkView(BaseLinkFormView):
@@ -739,4 +733,4 @@ class PhoneLinkView(BaseLinkFormView):
     link_url_field_name = "phone_number"
 
     def get_url_from_field_value(self, value):
-        return "tel:" + value
+        return f"tel:{value}"

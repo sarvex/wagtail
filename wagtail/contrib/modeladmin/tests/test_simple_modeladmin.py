@@ -819,7 +819,7 @@ class TestRevisableEditView(WagtailTestUtils, TestCase):
 
     def post(self, post_data):
         return self.client.post(
-            "/admin/modeladmintest/publisher/edit/%s/" % self.instance.pk, post_data
+            f"/admin/modeladmintest/publisher/edit/{self.instance.pk}/", post_data
         )
 
     def test_edit_with_revision(self):

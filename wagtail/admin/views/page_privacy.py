@@ -12,9 +12,7 @@ def set_privacy(request, page_id):
     if not page_perms.can_set_view_restrictions():
         raise PermissionDenied
 
-    # fetch restriction records in depth order so that ancestors appear first
-    restrictions = page.get_view_restrictions().order_by("page__depth")
-    if restrictions:
+    if restrictions := page.get_view_restrictions().order_by("page__depth"):
         restriction = restrictions[0]
         restriction_exists_on_ancestor = restriction.page != page
     else:
@@ -46,14 +44,12 @@ def set_privacy(request, page_id):
                 },
             )
 
-    else:  # request is a GET
-        if not restriction_exists_on_ancestor:
-            if restriction:
-                form = PageViewRestrictionForm(instance=restriction)
-            else:
-                # no current view restrictions on this page
-                form = PageViewRestrictionForm(initial={"restriction_type": "none"})
-
+    elif not restriction_exists_on_ancestor:
+        form = (
+            PageViewRestrictionForm(instance=restriction)
+            if restriction
+            else PageViewRestrictionForm(initial={"restriction_type": "none"})
+        )
     if restriction_exists_on_ancestor:
         # display a message indicating that there is a restriction at ancestor level -
         # do not provide the form for setting up new restrictions

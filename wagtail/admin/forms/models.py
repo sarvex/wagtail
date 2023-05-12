@@ -88,8 +88,7 @@ register_form_field_override(
 
 # Callback to allow us to override the default form fields provided for each model field.
 def formfield_for_dbfield(db_field, **kwargs):
-    overrides = registry.get(db_field)
-    if overrides:
+    if overrides := registry.get(db_field):
         kwargs = dict(copy.deepcopy(overrides), **kwargs)
 
     return db_field.formfield(**kwargs)
@@ -121,10 +120,9 @@ class WagtailAdminModelFormMetaclass(PermissionedFormMetaclass, ClusterFormMetac
             if "formfield_callback" not in attrs or attrs["formfield_callback"] is None:
                 attrs["formfield_callback"] = formfield_for_dbfield
 
-            new_class = super(WagtailAdminModelFormMetaclass, cls).__new__(
+            return super(WagtailAdminModelFormMetaclass, cls).__new__(
                 cls, name, bases, attrs
             )
-            return new_class
 
     @classmethod
     def child_form(cls):
@@ -162,11 +160,10 @@ class WagtailAdminDraftStateFormMixin:
         expire_at = self.cleaned_data.get("expire_at")
 
         # Go live must be before expire
-        if go_live_at and expire_at:
-            if go_live_at > expire_at:
-                msg = _("Go live date/time must be before expiry date/time")
-                self.add_error("go_live_at", forms.ValidationError(msg))
-                self.add_error("expire_at", forms.ValidationError(msg))
+        if go_live_at and expire_at and go_live_at > expire_at:
+            msg = _("Go live date/time must be before expiry date/time")
+            self.add_error("go_live_at", forms.ValidationError(msg))
+            self.add_error("expire_at", forms.ValidationError(msg))
 
         # Expire at must be in the future
         if expire_at and expire_at < timezone.now():

@@ -51,11 +51,9 @@ def validation_error(request, message, form, buttons=None):
                     field_label = form[field_name].label
                 except KeyError:
                     field_label = field_name
-                prefix = "%s: " % field_label
+                prefix = f"{field_label}: "
 
-            for error in errors:
-                all_errors.append(prefix + error)
-
+            all_errors.extend(prefix + error for error in errors)
         errors_html = format_html_join("\n", "<li>{}</li>", ((e,) for e in all_errors))
         detail = format_html("""<ul class="errorlist">{}</ul>""", errors_html)
 

@@ -156,29 +156,26 @@ class ListBlock(Block):
         return ListValue(self, values=list(self.meta.default))
 
     def value_from_datadict(self, data, files, prefix):
-        count = int(data["%s-count" % prefix])
-        child_blocks_with_indexes = []
-        for i in range(0, count):
-            if data["%s-%d-deleted" % (prefix, i)]:
-                continue
-            child_blocks_with_indexes.append(
-                (
-                    int(data["%s-%d-order" % (prefix, i)]),
-                    ListValue.ListChild(
-                        self.child_block,
-                        self.child_block.value_from_datadict(
-                            data, files, "%s-%d-value" % (prefix, i)
-                        ),
-                        id=data.get("%s-%d-id" % (prefix, i)),
+        count = int(data[f"{prefix}-count"])
+        child_blocks_with_indexes = [
+            (
+                int(data["%s-%d-order" % (prefix, i)]),
+                ListValue.ListChild(
+                    self.child_block,
+                    self.child_block.value_from_datadict(
+                        data, files, "%s-%d-value" % (prefix, i)
                     ),
-                )
+                    id=data.get("%s-%d-id" % (prefix, i)),
+                ),
             )
-
+            for i in range(0, count)
+            if not data["%s-%d-deleted" % (prefix, i)]
+        ]
         child_blocks_with_indexes.sort()
         return ListValue(self, bound_blocks=[b for (i, b) in child_blocks_with_indexes])
 
     def value_omitted_from_data(self, data, files, prefix):
-        return ("%s-count" % prefix) not in data
+        return f"{prefix}-count" not in data
 
     def clean(self, value):
         # value is expected to be a ListValue, but if it's been assigned through external code it might
@@ -246,10 +243,7 @@ class ListBlock(Block):
         converted_values = self.child_block.bulk_to_python(raw_values)
         bound_blocks = []
         for i, item in enumerate(value):
-            if self._item_is_in_block_format(item):
-                list_item_id = item["id"]
-            else:
-                list_item_id = None
+            list_item_id = item["id"] if self._item_is_in_block_format(item) else None
             bound_blocks.append(
                 ListValue.ListChild(
                     self.child_block, converted_values[i], id=list_item_id
@@ -399,8 +393,7 @@ class ListBlockAdapter(Adapter):
                 "ADD": _("Add"),
             },
         }
-        help_text = getattr(block.meta, "help_text", None)
-        if help_text:
+        if help_text := getattr(block.meta, "help_text", None):
             meta["helpText"] = help_text
             meta["helpIcon"] = get_help_icon()
 

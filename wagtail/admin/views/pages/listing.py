@@ -120,22 +120,20 @@ def index(request, parent_page_id=None):
 
     if getattr(settings, "WAGTAIL_I18N_ENABLED", False):
         if not parent_page.is_root():
-            context.update(
-                {
-                    "locale": parent_page.locale,
-                    "translations": [
-                        {
-                            "locale": translation.locale,
-                            "url": reverse(
-                                "wagtailadmin_explore", args=[translation.id]
-                            ),
-                        }
-                        for translation in parent_page.get_translations()
-                        .only("id", "locale")
-                        .select_related("locale")
-                    ],
-                }
-            )
+            context |= {
+                "locale": parent_page.locale,
+                "translations": [
+                    {
+                        "locale": translation.locale,
+                        "url": reverse(
+                            "wagtailadmin_explore", args=[translation.id]
+                        ),
+                    }
+                    for translation in parent_page.get_translations()
+                    .only("id", "locale")
+                    .select_related("locale")
+                ],
+            }
         else:
             context["show_locale_labels"] = True
 

@@ -15,15 +15,14 @@ def get_base_url(request=None):
     base_url = getattr(settings, "WAGTAILAPI_BASE_URL", None)
 
     if base_url is None and request:
-        site = Site.find_for_request(request)
-        if site:
+        if site := Site.find_for_request(request):
             base_url = site.root_url
 
     if base_url:
         # We only want the scheme and netloc
         base_url_parsed = urlparse(force_str(base_url))
 
-        return base_url_parsed.scheme + "://" + base_url_parsed.netloc
+        return f"{base_url_parsed.scheme}://{base_url_parsed.netloc}"
 
 
 def get_full_url(request, path):
@@ -34,9 +33,7 @@ def get_full_url(request, path):
 
 
 def get_object_detail_url(router, request, model, pk):
-    url_path = router.get_object_detail_urlpath(model, pk)
-
-    if url_path:
+    if url_path := router.get_object_detail_urlpath(model, pk):
         return get_full_url(request, url_path)
 
 
@@ -183,12 +180,10 @@ def parse_fields_parameter(fields_str):
             # Some checks specific to '*' and '_'
             if ident in ["*", "_"]:
                 if not is_first:
-                    raise FieldsParameterParseError(
-                        "'%s' must be in the first position" % ident
-                    )
+                    raise FieldsParameterParseError(f"'{ident}' must be in the first position")
 
                 if negated:
-                    raise FieldsParameterParseError("'%s' cannot be negated" % ident)
+                    raise FieldsParameterParseError(f"'{ident}' cannot be negated")
 
             if fields_str and fields_str[0] == "(":
                 if negated:
@@ -267,4 +262,4 @@ def parse_boolean(value):
     elif value in ["false", "0"]:
         return False
     else:
-        raise ValueError("expected 'true' or 'false', got '%s'" % value)
+        raise ValueError(f"expected 'true' or 'false', got '{value}'")

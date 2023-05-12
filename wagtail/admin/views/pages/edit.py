@@ -115,10 +115,11 @@ class EditView(TemplateResponseMixin, ContextMixin, HookResponseMixin, View):
 
             # Edited
             replies = getattr(comment_form.formsets["replies"], "changed_objects", [])
-            replies = [
-                reply for reply, changed_fields in replies if "text" in changed_fields
-            ]
-            if replies:
+            if replies := [
+                reply
+                for reply, changed_fields in replies
+                if "text" in changed_fields
+            ]:
                 edited_replies.append((comment_form.instance, replies))
 
         return {
@@ -171,8 +172,14 @@ class EditView(TemplateResponseMixin, ContextMixin, HookResponseMixin, View):
             .objects.exclude(pk=self.request.user.pk)
             .exclude(pk__in=subscribers.values_list("user_id", flat=True))
             .filter(
-                Q(comment_replies__comment_id__in=relevant_comment_ids)
-                | Q(**{("%s__pk__in" % COMMENTS_RELATION_NAME): relevant_comment_ids})
+                (
+                    Q(comment_replies__comment_id__in=relevant_comment_ids)
+                    | Q(
+                        **{
+                            f"{COMMENTS_RELATION_NAME}__pk__in": relevant_comment_ids
+                        }
+                    )
+                )
             )
             .prefetch_related(
                 Prefetch("comment_replies", queryset=replies),
@@ -351,8 +358,7 @@ class EditView(TemplateResponseMixin, ContextMixin, HookResponseMixin, View):
 
         self.next_url = get_valid_next_url_from_request(self.request)
 
-        response = self.run_hook("before_edit_page", self.request, self.page)
-        if response:
+        if response := self.run_hook("before_edit_page", self.request, self.page):
             return response
 
         try:
@@ -387,8 +393,7 @@ class EditView(TemplateResponseMixin, ContextMixin, HookResponseMixin, View):
 
     def get(self, request):
         if self.lock:
-            lock_message = self.lock.get_message(self.request.user)
-            if lock_message:
+            if lock_message := self.lock.get_message(self.request.user):
                 if isinstance(self.lock, BasicLock) and self.page_perms.can_unlock():
                     lock_message = format_html(
                         '{} <span class="buttons"><button type="button" class="button button-small button-secondary" data-action="w-action#post" data-controller="w-action" data-w-action-url-value="{}">{}</button></span>',
@@ -534,8 +539,7 @@ class EditView(TemplateResponseMixin, ContextMixin, HookResponseMixin, View):
             self.log_commenting_changes(changes, revision)
             self.send_commenting_notifications(changes)
 
-        response = self.run_hook("after_edit_page", self.request, self.page)
-        if response:
+        if response := self.run_hook("after_edit_page", self.request, self.page):
             return response
 
         # Just saving - remain on edit page for further edits
@@ -555,8 +559,9 @@ class EditView(TemplateResponseMixin, ContextMixin, HookResponseMixin, View):
         # store submitted go_live_at for messaging below
         go_live_at = self.page.go_live_at
 
-        response = self.run_hook("before_publish_page", self.request, self.page)
-        if response:
+        if response := self.run_hook(
+            "before_publish_page", self.request, self.page
+        ):
             return response
 
         action = PublishPageRevisionAction(
@@ -576,8 +581,9 @@ class EditView(TemplateResponseMixin, ContextMixin, HookResponseMixin, View):
         # need the up-to-date URL for the "View Live" button.
         self.page = self.page.specific_class.objects.get(pk=self.page.pk)
 
-        response = self.run_hook("after_publish_page", self.request, self.page)
-        if response:
+        if response := self.run_hook(
+            "after_publish_page", self.request, self.page
+        ):
             return response
 
         # Notifications
@@ -594,16 +600,15 @@ class EditView(TemplateResponseMixin, ContextMixin, HookResponseMixin, View):
                     ),
                     "page_title": self.page.get_admin_display_title(),
                 }
-            else:
-                if self.page.live:
-                    message = _(
-                        "Page '%(page_title)s' is live and this version has been scheduled for publishing."
-                    ) % {"page_title": self.page.get_admin_display_title()}
+            elif self.page.live:
+                message = _(
+                    "Page '%(page_title)s' is live and this version has been scheduled for publishing."
+                ) % {"page_title": self.page.get_admin_display_title()}
 
-                else:
-                    message = _(
-                        "Page '%(page_title)s' has been scheduled for publishing."
-                    ) % {"page_title": self.page.get_admin_display_title()}
+            else:
+                message = _(
+                    "Page '%(page_title)s' has been scheduled for publishing."
+                ) % {"page_title": self.page.get_admin_display_title()}
 
             messages.success(
                 self.request, message, buttons=[self.get_edit_message_button()]
@@ -632,8 +637,7 @@ class EditView(TemplateResponseMixin, ContextMixin, HookResponseMixin, View):
             buttons.append(self.get_edit_message_button())
             messages.success(self.request, message, buttons=buttons)
 
-        response = self.run_hook("after_edit_page", self.request, self.page)
-        if response:
+        if response := self.run_hook("after_edit_page", self.request, self.page):
             return response
 
         # we're done here - redirect back to the explorer
@@ -679,8 +683,7 @@ class EditView(TemplateResponseMixin, ContextMixin, HookResponseMixin, View):
             ],
         )
 
-        response = self.run_hook("after_edit_page", self.request, self.page)
-        if response:
+        if response := self.run_hook("after_edit_page", self.request, self.page):
             return response
 
         # we're done here - redirect back to the explorer
@@ -721,8 +724,7 @@ class EditView(TemplateResponseMixin, ContextMixin, HookResponseMixin, View):
             ],
         )
 
-        response = self.run_hook("after_edit_page", self.request, self.page)
-        if response:
+        if response := self.run_hook("after_edit_page", self.request, self.page):
             return response
 
         # we're done here - redirect back to the explorer
@@ -760,8 +762,7 @@ class EditView(TemplateResponseMixin, ContextMixin, HookResponseMixin, View):
 
         self.add_save_confirmation_message()
 
-        response = self.run_hook("after_edit_page", self.request, self.page)
-        if response:
+        if response := self.run_hook("after_edit_page", self.request, self.page):
             return response
 
         # we're done here - redirect back to the explorer
@@ -787,8 +788,7 @@ class EditView(TemplateResponseMixin, ContextMixin, HookResponseMixin, View):
         # Notifications
         self.add_cancel_workflow_confirmation_message()
 
-        response = self.run_hook("after_edit_page", self.request, self.page)
-        if response:
+        if response := self.run_hook("after_edit_page", self.request, self.page):
             return response
 
         # Just saving - remain on edit page for further edits
@@ -806,7 +806,7 @@ class EditView(TemplateResponseMixin, ContextMixin, HookResponseMixin, View):
         target_url = reverse("wagtailadmin_pages:edit", args=[self.page.id])
         if self.next_url:
             # Ensure the 'next' url is passed through again if present
-            target_url += "?next=%s" % quote(self.next_url)
+            target_url += f"?next={quote(self.next_url)}"
         return redirect(target_url)
 
     def form_invalid(self, form):

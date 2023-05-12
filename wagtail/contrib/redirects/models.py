@@ -80,10 +80,7 @@ class Redirect(models.Model):
         return None
 
     def get_is_permanent_display(self):
-        if self.is_permanent:
-            return _("permanent")
-        else:
-            return _("temporary")
+        return _("permanent") if self.is_permanent else _("temporary")
 
     @classmethod
     def get_for_site(cls, site=None):
@@ -147,7 +144,7 @@ class Redirect(models.Model):
         # Path must start with / but not end with /
         path = url_parsed[2]
         if not path.startswith("/"):
-            path = "/" + path
+            path = f"/{path}"
 
         if path.endswith("/") and len(path) > 1:
             path = path[:-1]
@@ -160,14 +157,11 @@ class Redirect(models.Model):
         # Query string components must be sorted alphabetically
         query_string = url_parsed[4]
         query_string_components = query_string.split("&")
-        query_string = "&".join(sorted(query_string_components))
-
         if parameters:
-            path = path + ";" + parameters
+            path = f"{path};{parameters}"
 
-        # Add query string to path
-        if query_string:
-            path = path + "?" + query_string
+        if query_string := "&".join(sorted(query_string_components)):
+            path = f"{path}?{query_string}"
 
         return path
 
@@ -184,7 +178,7 @@ class Redirect(models.Model):
         if path == "/":
             return ""
         elif not path.startswith("/"):
-            path = "/" + path
+            path = f"/{path}"
 
         return path
 

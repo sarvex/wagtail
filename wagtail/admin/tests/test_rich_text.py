@@ -301,9 +301,7 @@ class TestRichTextValue(TestCase):
         self.root_page.add_child(instance=self.single_event_page)
 
     def test_render(self):
-        text = '<p>To the <a linktype="page" id="{}">moon</a>!</p>'.format(
-            self.single_event_page.id
-        )
+        text = f'<p>To the <a linktype="page" id="{self.single_event_page.id}">moon</a>!</p>'
         value = RichText(text)
         result = str(value)
         expected = '<p>To the <a href="/foo/pointless-suffix/">moon</a>!</p>'

@@ -25,10 +25,7 @@ def get_format_cls_by_extension(extension):
 
     available_formats = [x for x in formats if x.__name__ == extension.upper()]
 
-    if not available_formats:
-        return None
-
-    return available_formats[0]
+    return None if not available_formats else available_formats[0]
 
 
 def get_import_formats():

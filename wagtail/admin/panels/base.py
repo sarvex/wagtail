@@ -33,7 +33,7 @@ def get_form_for_model(
         meta_class_attrs["fields"] = []
 
     # Give this new form class a reasonable name.
-    class_name = model.__name__ + "Form"
+    class_name = f"{model.__name__}Form"
     bases = (form_class.Meta,) if hasattr(form_class, "Meta") else ()
     Meta = type("Meta", bases, meta_class_attrs)
     form_class_attrs = {"Meta": Meta}
@@ -141,14 +141,12 @@ class Panel:
         """
         if self.model is None:
             raise ImproperlyConfigured(
-                "%s.bind_to_model(model) must be called before get_bound_panel"
-                % type(self).__name__
+                f"{type(self).__name__}.bind_to_model(model) must be called before get_bound_panel"
             )
 
         if not issubclass(self.BoundPanel, Panel.BoundPanel):
             raise ImproperlyConfigured(
-                "%s.BoundPanel must be a subclass of Panel.BoundPanel"
-                % type(self).__name__
+                f"{type(self).__name__}.BoundPanel must be a subclass of Panel.BoundPanel"
             )
 
         return self.BoundPanel(
@@ -163,10 +161,7 @@ class Panel:
         pass
 
     def __repr__(self):
-        return "<%s with model=%s>" % (
-            self.__class__.__name__,
-            self.model,
-        )
+        return f"<{self.__class__.__name__} with model={self.model}>"
 
     def classes(self):
         """
@@ -174,9 +169,7 @@ class Panel:
         Subclasses of Panel should override this, invoking super().classes() to
         append more classes specific to the situation.
         """
-        if self.classname:
-            return [self.classname]
-        return []
+        return [self.classname] if self.classname else []
 
     def id_for_label(self):
         """
@@ -284,10 +277,4 @@ class Panel:
             return mark_safe(self.render_html() + self.render_missing_fields())
 
         def __repr__(self):
-            return "<%s with model=%s instance=%s request=%s form=%s>" % (
-                self.__class__.__name__,
-                self.panel.model,
-                self.instance,
-                self.request,
-                self.form.__class__.__name__,
-            )
+            return f"<{self.__class__.__name__} with model={self.panel.model} instance={self.instance} request={self.request} form={self.form.__class__.__name__}>"

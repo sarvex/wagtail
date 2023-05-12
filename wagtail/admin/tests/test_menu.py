@@ -72,7 +72,7 @@ class TestMenuRendering(WagtailTestUtils, TestCase):
         )
 
         def remove_images(request, items):
-            items[:] = [item for item in items if not item.name == "images"]
+            items[:] = [item for item in items if item.name != "images"]
 
         with hooks.register_temporarily(
             [

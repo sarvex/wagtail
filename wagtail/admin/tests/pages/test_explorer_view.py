@@ -199,9 +199,7 @@ class TestPageExplorer(WagtailTestUtils, TestCase):
         for i in range(150):
             self.root_page.add_child(
                 instance=SimplePage(
-                    title="Page " + str(i),
-                    slug="page-" + str(i),
-                    content="hello",
+                    title=f"Page {str(i)}", slug=f"page-{str(i)}", content="hello"
                 )
             )
 
@@ -296,7 +294,7 @@ class TestPageExplorer(WagtailTestUtils, TestCase):
         for i in range(count):
             self.root_page.add_child(
                 instance=SingleEventPage(
-                    title="New event " + str(i),
+                    title=f"New event {str(i)}",
                     location="the moon",
                     audience="public",
                     cost="free",

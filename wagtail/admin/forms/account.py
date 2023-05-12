@@ -127,7 +127,7 @@ class AvatarPreferencesForm(forms.ModelForm):
             except IOError:
                 # failure to delete the old avatar shouldn't prevent us from continuing
                 warnings.warn(
-                    "Failed to delete old avatar file: %s" % self._original_avatar.name
+                    f"Failed to delete old avatar file: {self._original_avatar.name}"
                 )
         super().save(commit=commit)
 

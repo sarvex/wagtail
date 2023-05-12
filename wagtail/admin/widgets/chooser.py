@@ -63,10 +63,7 @@ class BaseChooser(widgets.Input):
     def value_from_datadict(self, data, files, name):
         # treat the empty string as None
         result = super().value_from_datadict(data, files, name)
-        if result == "":
-            return None
-        else:
-            return result
+        return None if result == "" else result
 
     def get_hidden_input_context(self, name, value, attrs):
         """
@@ -145,8 +142,7 @@ class BaseChooser(widgets.Input):
         client-side rendering code (via telepath) that contains all the information needed
         for display. Typically this is a dict of id, title etc; it must be JSON-serialisable.
         """
-        instance = self.get_instance(value)
-        if instance:
+        if instance := self.get_instance(value):
             return self.get_value_data_from_instance(instance)
 
     def render(self, name, value, attrs=None, renderer=None):
@@ -246,14 +242,11 @@ class AdminPageChooser(BaseChooser):
 
         if len(cleaned_target_models) == 1 and cleaned_target_models[0] is not Page:
             model_name = cleaned_target_models[0]._meta.verbose_name.title()
-            self.choose_one_text += " (" + model_name + ")"
+            self.choose_one_text += f" ({model_name})"
 
         self.user_perms = user_perms
         self.target_models = cleaned_target_models
-        if len(self.target_models) == 1:
-            self.model = self.target_models[0]
-        else:
-            self.model = Page
+        self.model = self.target_models[0] if len(self.target_models) == 1 else Page
         self.can_choose_root = bool(can_choose_root)
 
     @property
@@ -277,8 +270,7 @@ class AdminPageChooser(BaseChooser):
         }
 
     def get_instance(self, value):
-        instance = super().get_instance(value)
-        if instance:
+        if instance := super().get_instance(value):
             return instance.specific
 
     def get_display_title(self, instance):

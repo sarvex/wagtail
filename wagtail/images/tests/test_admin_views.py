@@ -34,7 +34,7 @@ from wagtail.test.utils import WagtailTestUtils
 from .utils import Image, get_test_image_file, get_test_image_file_svg
 
 # Get the chars that Django considers safe to leave unescaped in a URL
-urlquote_safechars = RFC3986_SUBDELIMS + str("/~:@")
+urlquote_safechars = f"{RFC3986_SUBDELIMS}/~:@"
 
 
 class TestImageIndexView(WagtailTestUtils, TestCase):
@@ -219,7 +219,7 @@ class TestImageIndexView(WagtailTestUtils, TestCase):
 
         edit_url = reverse("wagtailimages:edit", args=(image.id,))
         next_url = urllib.parse.quote(response._request.get_full_path())
-        self.assertContains(response, "%s?next=%s" % (edit_url, next_url))
+        self.assertContains(response, f"{edit_url}?next={next_url}")
 
     def test_tags(self):
         image_two_tags = Image.objects.create(
@@ -235,10 +235,7 @@ class TestImageIndexView(WagtailTestUtils, TestCase):
         self.assertIsNone(current_tag)
 
         tags = response.context["popular_tags"]
-        self.assertTrue(
-            [tag.name for tag in tags] == ["one", "two"]
-            or [tag.name for tag in tags] == ["two", "one"]
-        )
+        self.assertTrue([tag.name for tag in tags] in [["one", "two"], ["two", "one"]])
 
     def test_tag_filtering(self):
         Image.objects.create(
@@ -1125,7 +1122,7 @@ class TestImageEditView(WagtailTestUtils, TestCase):
         self.update_from_db()
         self.assertFalse(self.storage.exists(old_file.name))
         self.assertTrue(self.storage.exists(self.image.file.name))
-        self.assertNotEqual(self.image.file.name, "original_images/" + new_name)
+        self.assertNotEqual(self.image.file.name, f"original_images/{new_name}")
         self.assertNotEqual(self.image.file_size, old_size)
         self.assertEqual(self.image.file_size, new_size)
         self.assertNotEqual(self.get_content(), old_data)
@@ -1162,7 +1159,7 @@ class TestImageEditView(WagtailTestUtils, TestCase):
         self.update_from_db()
         self.assertFalse(self.storage.exists(old_file.name))
         self.assertTrue(self.storage.exists(self.image.file.name))
-        self.assertEqual(self.image.file.name, "original_images/" + new_name)
+        self.assertEqual(self.image.file.name, f"original_images/{new_name}")
         self.assertNotEqual(self.image.file_size, old_size)
         self.assertEqual(self.image.file_size, new_size)
         self.assertNotEqual(self.get_content(), old_data)

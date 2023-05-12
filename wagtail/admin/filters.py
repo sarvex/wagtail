@@ -24,9 +24,7 @@ class DateRangePickerWidget(SuffixedMultiWidget):
         super().__init__(widgets, attrs)
 
     def decompress(self, value):
-        if value:
-            return [value.start, value.stop]
-        return [None, None]
+        return [value.start, value.stop] if value else [None, None]
 
 
 class FilteredModelChoiceIterator(django_filters.fields.ModelChoiceIterator):

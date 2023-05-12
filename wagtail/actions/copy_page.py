@@ -142,7 +142,7 @@ class CopyPageAction:
             base_update_attrs["translation_key"] = uuid.uuid4()
 
         if update_attrs:
-            base_update_attrs.update(update_attrs)
+            base_update_attrs |= update_attrs
 
         page_copy, child_object_map = _copy(
             specific_page, exclude_fields=exclude_fields, update_attrs=base_update_attrs

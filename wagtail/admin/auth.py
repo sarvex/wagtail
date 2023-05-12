@@ -137,13 +137,11 @@ def user_has_any_page_permission(user):
 
     # At least one of the users groups has a GroupPagePermission.
     # The user can probably do something.
-    if GroupPagePermission.objects.filter(group__in=user.groups.all()).exists():
-        return True
-
-    # Specific permissions for a page type do not mean anything.
-
-    # No luck! This user can not do anything with pages.
-    return False
+    return bool(
+        GroupPagePermission.objects.filter(
+            group__in=user.groups.all()
+        ).exists()
+    )
 
 
 def reject_request(request):
@@ -213,7 +211,7 @@ def require_admin_access(view_func):
 
                 return permission_denied(request)
 
-        if not request.headers.get("x-requested-with") == "XMLHttpRequest":
+        if request.headers.get("x-requested-with") != "XMLHttpRequest":
             messages.error(request, _("You do not have permission to access the admin"))
 
         return reject_request(request)

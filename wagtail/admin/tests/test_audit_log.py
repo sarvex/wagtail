@@ -122,7 +122,7 @@ class TestAuditLogAdmin(WagtailTestUtils, TestCase):
         history_url = reverse(
             "wagtailadmin_pages:history", kwargs={"page_id": self.hello_page.id}
         )
-        response = self.client.get(history_url + "?action=wagtail.edit")
+        response = self.client.get(f"{history_url}?action=wagtail.edit")
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Draft saved", count=2)
         self.assertNotContains(response, "Locked")

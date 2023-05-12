@@ -39,9 +39,7 @@ class LockedPagesView(PageReportView):
     filterset_class = LockedPagesReportFilterSet
 
     def get_filename(self):
-        return "locked-pages-report-{}".format(
-            datetime.datetime.today().strftime("%Y-%m-%d")
-        )
+        return f'locked-pages-report-{datetime.datetime.now().strftime("%Y-%m-%d")}'
 
     def get_queryset(self):
         pages = (

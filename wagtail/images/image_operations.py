@@ -158,14 +158,13 @@ class FillOperation(TransformOperation):
             if extra_part.startswith("c"):
                 self.crop_closeness = int(extra_part[1:])
             else:
-                raise ValueError("Unrecognised filter spec part: %s" % extra_part)
+                raise ValueError(f"Unrecognised filter spec part: {extra_part}")
 
         # Divide it by 100 (as it's a percentage)
         self.crop_closeness /= 100
 
         # Clamp it
-        if self.crop_closeness > 1:
-            self.crop_closeness = 1
+        self.crop_closeness = min(self.crop_closeness, 1)
 
     def run(self, transform, image):
         image_width, image_height = transform.size
@@ -183,7 +182,6 @@ class FillOperation(TransformOperation):
         crop_width = crop_max_width
         crop_height = crop_max_height
 
-        # Use crop closeness to zoom in
         if focal_point is not None:
             # Get crop min
             crop_min_scale = max(
@@ -217,8 +215,6 @@ class FillOperation(TransformOperation):
                         + (crop_min_height - crop_max_height) * crop_closeness
                     )
 
-        # Find focal point UV
-        if focal_point is not None:
             fp_x, fp_y = focal_point.centroid
         else:
             # Fall back to positioning in the centre

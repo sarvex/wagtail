@@ -179,10 +179,7 @@ class AddPageItem(BaseItem):
 
         # Don't render if user doesn't have ability to add children here
         permission_checker = self.page.permissions_for_user(request.user)
-        if not permission_checker.can_add_subpage():
-            return ""
-
-        return super().render(request)
+        return super().render(request) if permission_checker.can_add_subpage() else ""
 
 
 class ExplorePageItem(BaseItem):
@@ -237,10 +234,7 @@ class EditPageItem(BaseItem):
 
         # Don't render if the user doesn't have permission to edit this page
         permission_checker = self.page.permissions_for_user(request.user)
-        if not permission_checker.can_edit():
-            return ""
-
-        return super().render(request)
+        return "" if not permission_checker.can_edit() else super().render(request)
 
 
 class ModeratePageItem(BaseItem):

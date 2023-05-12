@@ -23,6 +23,6 @@ def render_modal_workflow(
         )
 
     if json_data:
-        response.update(json_data)
+        response |= json_data
 
     return JsonResponse(response)

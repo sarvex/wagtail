@@ -18,14 +18,11 @@ class TestSiteSwitchFromSiteOrdering(TestCase):
         site_3 = Site.objects.create(hostname="alfa.com", root_page=self.root_page)
         form = SiteSwitchForm(site_1, TestSiteSetting)
         expected_choices = [
-            ("/admin/settings/tests/testsitesetting/{}/".format(site_3.id), "alfa.com"),
+            (f"/admin/settings/tests/testsitesetting/{site_3.id}/", "alfa.com"),
             (
-                "/admin/settings/tests/testsitesetting/{}/".format(site_2.id),
+                f"/admin/settings/tests/testsitesetting/{site_2.id}/",
                 "bravo.com [default]",
             ),
-            (
-                "/admin/settings/tests/testsitesetting/{}/".format(site_1.id),
-                "charly.com",
-            ),
+            (f"/admin/settings/tests/testsitesetting/{site_1.id}/", "charly.com"),
         ]
         self.assertEqual(form.fields["site"].choices, expected_choices)

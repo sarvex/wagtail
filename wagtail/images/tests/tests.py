@@ -173,8 +173,7 @@ class TestImageTag(TestCase):
     def test_image_url(self):
         result = self.render_image_url_tag(self.image, "wagtailimages_serve")
         self.assertRegex(
-            result,
-            "/images/.*/width-400/{}".format(self.image.file.name.split("/")[-1]),
+            result, f'/images/.*/width-400/{self.image.file.name.split("/")[-1]}'
         )
 
     def test_image_url_custom_view(self):
@@ -184,9 +183,7 @@ class TestImageTag(TestCase):
 
         self.assertRegex(
             result,
-            "/testimages/custom_view/.*/width-400/{}".format(
-                self.image.file.name.split("/")[-1]
-            ),
+            f'/testimages/custom_view/.*/width-400/{self.image.file.name.split("/")[-1]}',
         )
 
     def test_image_url_no_imageserve_view_added(self):

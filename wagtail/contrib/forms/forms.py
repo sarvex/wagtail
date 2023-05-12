@@ -76,23 +76,21 @@ class FormBuilder:
         Assumes form field creation functions are in the format:
         'create_fieldtype_field'
         """
-        create_field_function = getattr(self, "create_%s_field" % type, None)
-        if create_field_function:
+        if create_field_function := getattr(self, f"create_{type}_field", None):
             return create_field_function
-        else:
-            import inspect
+        import inspect
 
-            method_list = [
-                f[0]
-                for f in inspect.getmembers(self.__class__, inspect.isfunction)
-                if f[0].startswith("create_") and f[0].endswith("_field")
-            ]
-            raise AttributeError(
-                "Could not find function matching format \
+        method_list = [
+            f[0]
+            for f in inspect.getmembers(self.__class__, inspect.isfunction)
+            if f[0].startswith("create_") and f[0].endswith("_field")
+        ]
+        raise AttributeError(
+            "Could not find function matching format \
                 create_<fieldname>_field for type: "
-                + type,
-                "Must be one of: " + ", ".join(method_list),
-            )
+            + type,
+            "Must be one of: " + ", ".join(method_list),
+        )
 
     def get_formatted_field_choices(self, field):
         """
@@ -121,14 +119,14 @@ class FormBuilder:
         If no new lines in the provided default values, split by commas.
         """
 
-        if "\n" in field.default_value:
-            values = [
-                x.strip().rstrip(",").strip() for x in field.default_value.split("\r\n")
+        return (
+            [
+                x.strip().rstrip(",").strip()
+                for x in field.default_value.split("\r\n")
             ]
-        else:
-            values = [x.strip() for x in field.default_value.split(",")]
-
-        return values
+            if "\n" in field.default_value
+            else [x.strip() for x in field.default_value.split(",")]
+        )
 
     @property
     def formfields(self):
@@ -147,17 +145,18 @@ class FormBuilder:
         return formfields
 
     def get_field_options(self, field):
-        options = {"label": field.label}
-        if getattr(settings, "WAGTAILFORMS_HELP_TEXT_ALLOW_HTML", False):
-            options["help_text"] = field.help_text
-        else:
-            options["help_text"] = conditional_escape(field.help_text)
+        options = {
+            "label": field.label,
+            "help_text": field.help_text
+            if getattr(settings, "WAGTAILFORMS_HELP_TEXT_ALLOW_HTML", False)
+            else conditional_escape(field.help_text),
+        }
         options["required"] = field.required
         options["initial"] = field.default_value
         return options
 
     def get_form_class(self):
-        return type(str("WagtailForm"), (BaseForm,), self.formfields)
+        return type("WagtailForm", (BaseForm,), self.formfields)
 
 
 class SelectDateForm(django.forms.Form):
@@ -187,10 +186,9 @@ class WagtailAdminFormPageForm(WagtailAdminPageForm):
                 f.instance.clean_name or f.instance.get_field_clean_name()
                 for f in forms
             ]
-            duplicate_clean_name = next(
+            if duplicate_clean_name := next(
                 (n for n in clean_names if clean_names.count(n) > 1), None
-            )
-            if duplicate_clean_name:
+            ):
                 duplicate_form_field = next(
                     f
                     for f in self.formsets["form_fields"].forms

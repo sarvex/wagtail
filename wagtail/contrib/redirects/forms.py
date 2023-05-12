@@ -58,7 +58,7 @@ class ImportForm(forms.Form):
     def __init__(self, allowed_extensions, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        accept = ",".join([".{}".format(x) for x in allowed_extensions])
+        accept = ",".join([f".{x}" for x in allowed_extensions])
         self.fields["import_file"].widget = forms.FileInput(attrs={"accept": accept})
 
         uppercased_extensions = [x.upper() for x in allowed_extensions]
@@ -118,9 +118,7 @@ class ConfirmImportForm(ConfirmImportManagementForm):
     def __init__(self, headers, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        choices = []
-        for i, f in enumerate(headers):
-            choices.append([str(i), f])
+        choices = [[str(i), f] for i, f in enumerate(headers)]
         if len(headers) > 1:
             choices.insert(0, ("", "---"))
 

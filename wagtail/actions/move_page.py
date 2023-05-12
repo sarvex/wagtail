@@ -26,11 +26,16 @@ class MovePageAction:
         self.user = user
 
     def check(self, parent_after, skip_permission_checks=False):
-        if self.user and not skip_permission_checks:
-            if not self.page.permissions_for_user(self.user).can_move_to(parent_after):
-                raise MovePagePermissionError(
-                    "You do not have permission to move the page to the target specified."
-                )
+        if (
+            self.user
+            and not skip_permission_checks
+            and not self.page.permissions_for_user(self.user).can_move_to(
+                parent_after
+            )
+        ):
+            raise MovePagePermissionError(
+                "You do not have permission to move the page to the target specified."
+            )
 
     def _move_page(self, page, target, parent_after):
         from wagtail.models import Page

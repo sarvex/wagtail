@@ -72,34 +72,32 @@ class PublishBulkAction(PageBulkAction):
     def get_success_message(self, num_parent_objects, num_child_objects):
         include_descendants = self.cleaned_form.cleaned_data["include_descendants"]
         if num_parent_objects == 1:
-            if include_descendants:
-                if num_child_objects == 0:
-                    success_message = _("1 page has been published")
-                else:
-                    success_message = ngettext(
-                        "1 page and %(num_child_objects)d child page have been published",
-                        "1 page and %(num_child_objects)d child pages have been published",
-                        num_child_objects,
-                    ) % {"num_child_objects": num_child_objects}
-            else:
-                success_message = _("1 page has been published")
+            return (
+                _("1 page has been published")
+                if include_descendants
+                and num_child_objects == 0
+                or not include_descendants
+                else ngettext(
+                    "1 page and %(num_child_objects)d child page have been published",
+                    "1 page and %(num_child_objects)d child pages have been published",
+                    num_child_objects,
+                )
+                % {"num_child_objects": num_child_objects}
+            )
+        elif (
+            include_descendants
+            and num_child_objects == 0
+            or not include_descendants
+        ):
+            return _("%(num_parent_objects)d pages have been published") % {
+                "num_parent_objects": num_parent_objects
+            }
         else:
-            if include_descendants:
-                if num_child_objects == 0:
-                    success_message = _(
-                        "%(num_parent_objects)d pages have been published"
-                    ) % {"num_parent_objects": num_parent_objects}
-                else:
-                    success_message = ngettext(
-                        "%(num_parent_objects)d pages and %(num_child_objects)d child page have been published",
-                        "%(num_parent_objects)d pages and %(num_child_objects)d child pages have been published",
-                        num_child_objects,
-                    ) % {
-                        "num_child_objects": num_child_objects,
-                        "num_parent_objects": num_parent_objects,
-                    }
-            else:
-                success_message = _(
-                    "%(num_parent_objects)d pages have been published"
-                ) % {"num_parent_objects": num_parent_objects}
-        return success_message
+            return ngettext(
+                "%(num_parent_objects)d pages and %(num_child_objects)d child page have been published",
+                "%(num_parent_objects)d pages and %(num_child_objects)d child pages have been published",
+                num_child_objects,
+            ) % {
+                "num_child_objects": num_child_objects,
+                "num_parent_objects": num_parent_objects,
+            }

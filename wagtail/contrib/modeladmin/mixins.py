@@ -45,14 +45,11 @@ class ThumbnailMixin:
             "loading": "lazy",
         }
         if not image:
-            if self.thumb_default:
-                return mark_safe("<img{}>".format(flatatt(img_attrs)))
-            return ""
-
+            return mark_safe(f"<img{flatatt(img_attrs)}>") if self.thumb_default else ""
         # try to get a rendition of the image to use
         from wagtail.images.shortcuts import get_rendition_or_not_found
 
         spec = self.thumb_image_filter_spec
         rendition = get_rendition_or_not_found(image, spec)
-        img_attrs.update({"src": rendition.url})
-        return mark_safe("<img{}>".format(flatatt(img_attrs)))
+        img_attrs["src"] = rendition.url
+        return mark_safe(f"<img{flatatt(img_attrs)}>")

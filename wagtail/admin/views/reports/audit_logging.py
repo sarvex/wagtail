@@ -121,7 +121,7 @@ class LogEntriesView(ReportView):
         }
 
     def get_filename(self):
-        return "audit-log-{}".format(datetime.datetime.today().strftime("%Y-%m-%d"))
+        return f'audit-log-{datetime.datetime.now().strftime("%Y-%m-%d")}'
 
     def get_filtered_queryset(self):
         """
@@ -162,11 +162,7 @@ class LogEntriesView(ReportView):
             filters, sub_queryset = self.filter_queryset(sub_queryset)
             # disable any native ordering on the queryset; we will re-apply it on the combined result
             sub_queryset = sub_queryset.order_by()
-            if queryset is None:
-                queryset = sub_queryset
-            else:
-                queryset = queryset.union(sub_queryset)
-
+            queryset = sub_queryset if queryset is None else queryset.union(sub_queryset)
         return filters, queryset.order_by("-timestamp")
 
     def decorate_paginated_queryset(self, queryset):

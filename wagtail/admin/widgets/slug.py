@@ -12,5 +12,5 @@ class SlugInput(widgets.TextInput):
             ),
         }
         if attrs:
-            default_attrs.update(attrs)
+            default_attrs |= attrs
         super().__init__(default_attrs)

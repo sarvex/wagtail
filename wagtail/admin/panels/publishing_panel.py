@@ -34,8 +34,7 @@ class PublishingPanel(MultiFieldPanel):
                 ),
             ],
             "classname": "publishing",
-        }
-        updated_kwargs.update(kwargs)
+        } | kwargs
         super().__init__(**updated_kwargs)
 
     @property

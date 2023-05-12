@@ -94,14 +94,13 @@ class WorkflowHistoryDetailView(
             for revision in self.revisions
         ]
 
-        # Make sure task states are always in a consistent order
-        # In some cases, they can be completed in a different order to what they are defined
-        task_states_by_revision = [
-            (revision, [task_states_by_task.get(task, None) for task in self.tasks])
+        return [
+            (
+                revision,
+                [task_states_by_task.get(task, None) for task in self.tasks],
+            )
             for revision, task_states_by_task in task_states_by_revision_task
         ]
-
-        return task_states_by_revision
 
     @cached_property
     def timeline(self):
@@ -120,12 +119,11 @@ class WorkflowHistoryDetailView(
             }
         ]
 
-        if self.workflow_state.status not in (
-            WorkflowState.STATUS_IN_PROGRESS,
-            WorkflowState.STATUS_NEEDS_CHANGES,
-        ):
-            last_task = completed_task_states.order_by("finished_at").last()
-            if last_task:
+        if last_task := completed_task_states.order_by("finished_at").last():
+            if     self.workflow_state.status not in (
+                WorkflowState.STATUS_IN_PROGRESS,
+                WorkflowState.STATUS_NEEDS_CHANGES,
+            ):
                 timeline.append(
                     {
                         "time": last_task.finished_at + timedelta(milliseconds=1),
@@ -134,24 +132,22 @@ class WorkflowHistoryDetailView(
                     }
                 )
 
-        for revision in self.revisions:
-            timeline.append(
-                {
-                    "time": revision.created_at,
-                    "action": "edited",
-                    "revision": revision,
-                }
-            )
-
-        for task_state in completed_task_states:
-            timeline.append(
-                {
-                    "time": task_state.finished_at,
-                    "action": "task_completed",
-                    "task_state": task_state,
-                }
-            )
-
+        timeline.extend(
+            {
+                "time": revision.created_at,
+                "action": "edited",
+                "revision": revision,
+            }
+            for revision in self.revisions
+        )
+        timeline.extend(
+            {
+                "time": task_state.finished_at,
+                "action": "task_completed",
+                "task_state": task_state,
+            }
+            for task_state in completed_task_states
+        )
         timeline.sort(key=lambda t: t["time"])
         timeline.reverse()
 

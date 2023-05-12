@@ -23,7 +23,7 @@ class TypeField(Field):
         return instance
 
     def to_representation(self, obj):
-        name = type(obj)._meta.app_label + "." + type(obj).__name__
+        name = f"{type(obj)._meta.app_label}.{type(obj).__name__}"
         self.context["view"].seen_types[name] = type(obj)
         return name
 
@@ -37,11 +37,12 @@ class DetailUrlField(Field):
     """
 
     def get_attribute(self, instance):
-        url = get_object_detail_url(
-            self.context["router"], self.context["request"], type(instance), instance.pk
-        )
-
-        if url:
+        if url := get_object_detail_url(
+            self.context["router"],
+            self.context["request"],
+            type(instance),
+            instance.pk,
+        ):
             return url
         else:
             # Hide the detail_url field if the object doesn't have an endpoint
@@ -87,7 +88,7 @@ class PageTypeField(Field):
     def to_representation(self, page):
         if page.specific_class is None:
             return None
-        name = page.specific_class._meta.app_label + "." + page.specific_class.__name__
+        name = f"{page.specific_class._meta.app_label}.{page.specific_class.__name__}"
         self.context["view"].seen_types[name] = page.specific_class
         return name
 
@@ -414,6 +415,6 @@ def get_serializer_class(
     }
 
     if field_serializer_overrides:
-        attrs.update(field_serializer_overrides)
+        attrs |= field_serializer_overrides
 
-    return type(str(model_.__name__ + "Serializer"), (base,), attrs)
+    return type(str(f"{model_.__name__}Serializer"), (base,), attrs)

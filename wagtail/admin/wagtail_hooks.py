@@ -72,17 +72,13 @@ class ExplorerMenuItem(MenuItem):
 
     def get_context(self, request):
         context = super().get_context(request)
-        start_page = get_explorable_root_page(request.user)
-
-        if start_page:
+        if start_page := get_explorable_root_page(request.user):
             context["start_page_id"] = start_page.id
 
         return context
 
     def render_component(self, request):
-        start_page = get_explorable_root_page(request.user)
-
-        if start_page:
+        if start_page := get_explorable_root_page(request.user):
             return PageExplorerMenuItemComponent(
                 self.name,
                 self.label,
@@ -114,7 +110,7 @@ class SettingsMenuItem(SubmenuMenuItem):
             self.menu.render_component(request),
             icon_name=self.icon_name,
             classnames=self.classnames,
-            footer_text="Wagtail v" + __version__,
+            footer_text=f"Wagtail v{__version__}",
         )
 
 
@@ -306,12 +302,7 @@ def page_listing_more_buttons(page, page_perms, next_url=None):
         )
     if page_perms.can_delete():
         url = reverse("wagtailadmin_pages:delete", args=[page.id])
-        include_next_url = True
-
-        # After deleting the page, it is impossible to redirect to it.
-        if next_url == reverse("wagtailadmin_explore", args=[page.id]):
-            include_next_url = False
-
+        include_next_url = next_url != reverse("wagtailadmin_explore", args=[page.id])
         if next_url and include_next_url:
             url += "?" + urlencode({"next": next_url})
 
@@ -502,7 +493,7 @@ def register_core_features(features):
     )
 
     headings_elements = ["h1", "h2", "h3", "h4", "h5", "h6"]
-    for order, element in enumerate(headings_elements):
+    for element in headings_elements:
         features.register_converter_rule(
             "editorhtml", element, [WhitelistRule(element, allow_without_attributes)]
         )
@@ -1149,7 +1140,7 @@ def register_icons(icons):
         "wagtail.svg",
         "warning.svg",
     ]:
-        icons.append("wagtailadmin/icons/{}".format(icon))
+        icons.append(f"wagtailadmin/icons/{icon}")
     return icons
 
 

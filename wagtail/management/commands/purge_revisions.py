@@ -25,12 +25,10 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         days = options.get("days")
 
-        revisions_deleted = purge_revisions(days=days)
-
-        if revisions_deleted:
+        if revisions_deleted := purge_revisions(days=days):
             self.stdout.write(
                 self.style.SUCCESS(
-                    "Successfully deleted %s revisions" % revisions_deleted
+                    f"Successfully deleted {revisions_deleted} revisions"
                 )
             )
         else:

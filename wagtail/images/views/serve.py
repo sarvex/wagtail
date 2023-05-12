@@ -30,11 +30,13 @@ class ServeView(View):
 
     @classonlymethod
     def as_view(cls, **initkwargs):
-        if "action" in initkwargs:
-            if initkwargs["action"] not in ["serve", "redirect"]:
-                raise ImproperlyConfigured(
-                    "ServeView action must be either 'serve' or 'redirect'"
-                )
+        if "action" in initkwargs and initkwargs["action"] not in [
+            "serve",
+            "redirect",
+        ]:
+            raise ImproperlyConfigured(
+                "ServeView action must be either 'serve' or 'redirect'"
+            )
 
         return super(ServeView, cls).as_view(**initkwargs)
 
@@ -56,7 +58,7 @@ class ServeView(View):
             )
         except InvalidFilterSpecError:
             return HttpResponse(
-                "Invalid filter spec: " + filter_spec,
+                f"Invalid filter spec: {filter_spec}",
                 content_type="text/plain",
                 status=400,
             )
@@ -68,7 +70,7 @@ class ServeView(View):
         rendition.file.open("rb")
         image_format = imghdr.what(rendition.file)
         return StreamingHttpResponse(
-            FileWrapper(rendition.file), content_type="image/" + image_format
+            FileWrapper(rendition.file), content_type=f"image/{image_format}"
         )
 
     def redirect(self, rendition):

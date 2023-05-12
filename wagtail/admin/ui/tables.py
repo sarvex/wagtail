@@ -45,10 +45,7 @@ class Column(metaclass=MediaDefiningClass):
     ):
         self.name = name
         self.accessor = accessor or name
-        if label is None:
-            self.label = capfirst(name.replace("_", " "))
-        else:
-            self.label = label
+        self.label = capfirst(name.replace("_", " ")) if label is None else label
         self.classname = classname
         self.sort_key = sort_key
         self.header = Column.Header(self)
@@ -64,7 +61,8 @@ class Column(metaclass=MediaDefiningClass):
             "table": table,
             "is_orderable": bool(self.sort_key),
             "is_ascending": self.sort_key and table.ordering == self.sort_key,
-            "is_descending": self.sort_key and table.ordering == ("-" + self.sort_key),
+            "is_descending": self.sort_key
+            and table.ordering == f"-{self.sort_key}",
             "request": parent_context.get("request"),
         }
 
@@ -120,11 +118,7 @@ class Column(metaclass=MediaDefiningClass):
         return Column.Cell(self, instance)
 
     def __repr__(self):
-        return "<%s.%s: %s>" % (
-            self.__class__.__module__,
-            self.__class__.__qualname__,
-            self.name,
-        )
+        return f"<{self.__class__.__module__}.{self.__class__.__qualname__}: {self.name}>"
 
 
 class TitleColumn(Column):
@@ -179,7 +173,7 @@ class TitleColumn(Column):
             return self._get_label_id_func(instance)
         elif self.label_prefix:
             id = multigetattr(instance, self.id_accessor)
-            return "%s-%s" % (self.label_prefix, id)
+            return f"{self.label_prefix}-{id}"
 
 
 class StatusFlagColumn(Column):
@@ -203,9 +197,7 @@ class StatusTagColumn(Column):
         self.primary = primary
 
     def get_primary(self, instance):
-        if callable(self.primary):
-            return self.primary(instance)
-        return self.primary
+        return self.primary(instance) if callable(self.primary) else self.primary
 
     def get_cell_context_data(self, instance, parent_context):
         context = super().get_cell_context_data(instance, parent_context)
@@ -256,8 +248,7 @@ class UserColumn(Column):
     def get_cell_context_data(self, instance, parent_context):
         context = super().get_cell_context_data(instance, parent_context)
 
-        user = context["value"]
-        if user:
+        if user := context["value"]:
             try:
                 full_name = user.get_full_name().strip()
             except AttributeError:
@@ -359,8 +350,7 @@ class Table(Component):
             return self.columns[key].get_cell(self.instance)
 
         def __iter__(self):
-            for name in self.columns:
-                yield name
+            yield from self.columns
 
         def __repr__(self):
             return repr([col.get_cell(self.instance) for col in self.columns.values()])

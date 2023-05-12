@@ -138,7 +138,7 @@ class TestEmbeds(TestCase):
 
         # Return a pretend record
         return {
-            "title": "Test: " + url,
+            "title": f"Test: {url}",
             "type": "video",
             "width": max_width if max_width else 640,
             "height": 480,
@@ -191,7 +191,7 @@ class TestEmbeds(TestCase):
 
         # Return a pretend record
         return {
-            "title": "Test: " + url,
+            "title": f"Test: {url}",
             "type": "video",
             "width": max_width if max_width else 640,
             "height": 480,
@@ -229,7 +229,7 @@ class TestEmbeds(TestCase):
     def dummy_finder_invalid_width(self, url, max_width=None, max_height=None):
         # Return a record with an invalid width
         return {
-            "title": "Test: " + url,
+            "title": f"Test: {url}",
             "type": "video",
             "thumbnail_url": "",
             "width": "100%",

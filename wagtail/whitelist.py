@@ -52,9 +52,6 @@ def attribute_rule(allowed_attrs):
                         del tag[attr]
                     else:
                         tag[attr] = new_val
-                else:
-                    # rule is not callable, just truthy - keep the attribute
-                    pass
             else:
                 # rule is falsy or absent - remove the attribute
                 del tag[attr]
@@ -126,9 +123,6 @@ class Whitelister:
         if isinstance(node, Comment):
             node.extract()
             return
-
-        # by default, nothing needs to be done to whitelist string nodes
-        pass
 
     def clean_tag_node(self, doc, tag):
         # first, whitelist the contents of this tag

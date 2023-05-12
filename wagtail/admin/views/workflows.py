@@ -200,8 +200,7 @@ class Edit(EditView):
         pages = Page.objects.filter(workflowpage__workflow=self.get_object())
         pages.paginator = Paginator(pages, self.MAX_PAGES)
         page_number = int(self.request.GET.get("p", 1))
-        paginated_pages = pages.paginator.page(page_number)
-        return paginated_pages
+        return pages.paginator.page(page_number)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -286,10 +285,9 @@ class Disable(DeleteView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        states_in_progress = WorkflowState.objects.filter(
+        if states_in_progress := WorkflowState.objects.filter(
             workflow=self.object, status=WorkflowState.STATUS_IN_PROGRESS
-        ).count()
-        if states_in_progress:
+        ).count():
             context["warning_message"] = ngettext(
                 "This workflow is in progress on %(states_in_progress)d page/snippet. Disabling this workflow will cancel moderation on this page/snippet.",
                 "This workflow is in progress on %(states_in_progress)d pages/snippets. Disabling this workflow will cancel moderation on these pages/snippets.",
@@ -361,16 +359,15 @@ def remove_workflow(request, page_pk, workflow_pk=None):
     if not workflow_permission_policy.user_has_permission(request.user, "change"):
         raise PermissionDenied
 
-    if hasattr(page, "workflowpage"):
-        # If workflow_pk is set, this will only remove the workflow if it its pk matches - this prevents accidental
-        # removal of the wrong workflow via a workflow edit page if the page listing is out of date
-        if not workflow_pk or workflow_pk == page.workflowpage.workflow.pk:
-            page.workflowpage.delete()
-            messages.success(
-                request,
-                _("Workflow removed from Page '%(page_title)s'.")
-                % {"page_title": page.get_admin_display_title()},
-            )
+    if hasattr(page, "workflowpage") and (
+        not workflow_pk or workflow_pk == page.workflowpage.workflow.pk
+    ):
+        page.workflowpage.delete()
+        messages.success(
+            request,
+            _("Workflow removed from Page '%(page_title)s'.")
+            % {"page_title": page.get_admin_display_title()},
+        )
 
     # Redirect
     redirect_to = request.POST.get("next", None)
@@ -552,10 +549,9 @@ class DisableTask(DeleteView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        states_in_progress = TaskState.objects.filter(
+        if states_in_progress := TaskState.objects.filter(
             status=TaskState.STATUS_IN_PROGRESS, task=self.get_object().pk
-        ).count()
-        if states_in_progress:
+        ).count():
             context["warning_message"] = ngettext(
                 "This task is in progress on %(states_in_progress)d page/snippet. Disabling this task will cause it to be skipped in the moderation workflow and not be listed for selection when editing a workflow.",
                 "This task is in progress on %(states_in_progress)d pages/snippets. Disabling this task will cause it to be skipped in the moderation workflow and not be listed for selection when editing a workflow.",
@@ -649,17 +645,13 @@ class BaseTaskChooserView(TemplateView):
         To be called after dispatch(); returns the form class for creating a new task
         """
         self.create_model = self.get_create_model()
-        if self.create_model:
-            return get_task_form_class(self.create_model)
-        else:
-            return None
+        return get_task_form_class(self.create_model) if self.create_model else None
 
     def get_create_form(self):
         """
         To be called after dispatch(); returns a blank create form, or None if not available
         """
-        create_form_class = self.get_create_form_class()
-        if create_form_class:
+        if create_form_class := self.get_create_form_class():
             return create_form_class(prefix="create-task")
 
     def get_task_type_options(self):
@@ -744,7 +736,7 @@ class TaskChooserView(BaseTaskChooserView):
         context = {
             "can_create": self.can_create,
         }
-        context.update(self.get_task_listing_context_data())
+        context |= self.get_task_listing_context_data()
         context.update(self.get_create_tab_context_data())
         return context
 

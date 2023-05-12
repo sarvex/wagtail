@@ -29,12 +29,7 @@ class Command:
     description = None
 
     def create_parser(self, command_name=None):
-        if command_name is None:
-            prog = None
-        else:
-            # hack the prog name as reported to ArgumentParser to include the command
-            prog = "%s %s" % (prog_name(), command_name)
-
+        prog = None if command_name is None else f"{prog_name()} {command_name}"
         parser = ArgumentParser(
             description=getattr(self, "description", None), add_help=False, prog=prog
         )
@@ -96,7 +91,7 @@ class CreateProject(Command):
         utility_args = [
             "django-admin",
             "startproject",
-            "--template=" + template_path,
+            f"--template={template_path}",
             "--ext=html,rst",
             "--name=Dockerfile",
             project_name,
@@ -310,8 +305,8 @@ class UpdateModulePaths(Command):
                 unified_diff(
                     original,
                     updated,
-                    fromfile="%s:before" % relative_path,
-                    tofile="%s:after" % relative_path,
+                    fromfile=f"{relative_path}:before",
+                    tofile=f"{relative_path}:after",
                 )
             )
 
@@ -401,12 +396,12 @@ def help_index():
     )  # NOQA
     print("Available subcommands:\n")  # NOQA
     for name, cmd in sorted(COMMANDS.items()):
-        print("    %s%s" % (name.ljust(20), cmd.description))  # NOQA
+        print(f"    {name.ljust(20)}{cmd.description}")
 
 
 def unknown_command(command):
-    print("Unknown command: '%s'" % command)  # NOQA
-    print("Type '%s help' for usage." % prog_name())  # NOQA
+    print(f"Unknown command: '{command}'")
+    print(f"Type '{prog_name()} help' for usage.")
     sys.exit(1)
 
 

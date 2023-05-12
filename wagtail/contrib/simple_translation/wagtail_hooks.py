@@ -53,15 +53,11 @@ def page_listing_more_buttons(page, page_perms, next_url=None):
         page_perms.user.has_perm("simple_translation.submit_translation")
         and not page.is_root()
     ):
-        # If there's at least one locale that we haven't translated into yet,
-        # show "Translate this page" button
-        has_locale_to_translate_to = Locale.objects.exclude(
+        if has_locale_to_translate_to := Locale.objects.exclude(
             id__in=page.get_translations(inclusive=True).values_list(
                 "locale_id", flat=True
             )
-        ).exists()
-
-        if has_locale_to_translate_to:
+        ).exists():
             url = reverse("simple_translation:submit_page_translation", args=[page.id])
             yield wagtailadmin_widgets.Button(_("Translate"), url, priority=60)
 
@@ -71,15 +67,11 @@ def page_header_buttons(page, page_perms, next_url=None):
     if not page.is_root() and page_perms.user.has_perm(
         "simple_translation.submit_translation"
     ):
-        # If there's at least one locale that we haven't translated into yet,
-        # show "Translate this page" button
-        has_locale_to_translate_to = Locale.objects.exclude(
+        if has_locale_to_translate_to := Locale.objects.exclude(
             id__in=page.get_translations(inclusive=True).values_list(
                 "locale_id", flat=True
             )
-        ).exists()
-
-        if has_locale_to_translate_to:
+        ).exists():
             url = reverse("simple_translation:submit_page_translation", args=[page.id])
             yield wagtailadmin_widgets.Button(
                 _("Translate"),
@@ -100,14 +92,11 @@ def register_snippet_listing_buttons(snippet, user, next_url=None):
     if issubclass(model, TranslatableMixin) and user.has_perm(
         "simple_translation.submit_translation"
     ):
-        # If there's at least one locale that we haven't translated into yet, show "Translate" button
-        has_locale_to_translate_to = Locale.objects.exclude(
+        if has_locale_to_translate_to := Locale.objects.exclude(
             id__in=snippet.get_translations(inclusive=True).values_list(
                 "locale_id", flat=True
             )
-        ).exists()
-
-        if has_locale_to_translate_to:
+        ).exists():
             url = reverse(
                 "simple_translation:submit_snippet_translation",
                 args=[model._meta.app_label, model._meta.model_name, quote(snippet.pk)],
@@ -128,15 +117,12 @@ def construct_translated_pages_to_cascade_actions(pages: List[Page], action: str
         return
 
     page_list = {}
-    if action == "unpublish":
-        # Only return non-alias translations of the page
-        for page in pages:
+    for page in pages:
+        if action == "unpublish":
             page_list[page] = Page.objects.translation_of(page, inclusive=False).filter(
                 alias_of__isnull=True
             )
-    elif action == "move" or action == "delete":
-        # Return all translations or aliases in other trees
-        for page in pages:
+        elif action in {"move", "delete"}:
             page_list[page] = Page.objects.translation_of(page, inclusive=False)
 
     return page_list

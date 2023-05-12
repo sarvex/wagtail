@@ -47,9 +47,7 @@ class StreamBlockValidationError(ValidationError):
         # All representations will be normalised to a dict of ValidationError instances,
         # which is also the preferred format for the original argument to be in.
         self.block_errors = {}
-        if block_errors is None:
-            pass
-        else:
+        if block_errors is not None:
             for index, val in block_errors.items():
                 if isinstance(val, ErrorList):
                     self.block_errors[index] = val.as_data()[0]
@@ -113,7 +111,7 @@ class BaseStreamBlock(Block):
         )
 
     def value_from_datadict(self, data, files, prefix):
-        count = int(data["%s-count" % prefix])
+        count = int(data[f"{prefix}-count"])
         values_with_indexes = []
         for i in range(0, count):
             if data["%s-%d-deleted" % (prefix, i)]:
@@ -150,7 +148,7 @@ class BaseStreamBlock(Block):
         )
 
     def value_omitted_from_data(self, data, files, prefix):
-        return ("%s-count" % prefix) not in data
+        return f"{prefix}-count" not in data
 
     @property
     def required(self):
@@ -291,15 +289,7 @@ class BaseStreamBlock(Block):
         ]
 
     def get_prep_value(self, value):
-        if not value:
-            # Falsy values (including None, empty string, empty list, and
-            # empty StreamValue) become an empty stream
-            return []
-        else:
-            # value is a StreamValue - delegate to its get_prep_value() method
-            # (which has special-case handling for lazy StreamValues to avoid useless
-            # round-trips to the full data representation and back)
-            return value.get_prep_value()
+        return [] if not value else value.get_prep_value()
 
     def get_form_state(self, value):
         if not value:
@@ -534,8 +524,7 @@ class StreamValue(MutableSequence):
             return result
 
         def __iter__(self):
-            for block_name in self.block_names:
-                yield block_name
+            yield from self.block_names
 
         def __len__(self):
             return len(self.block_names)
@@ -672,17 +661,11 @@ class StreamValue(MutableSequence):
 
     def blocks_by_name(self, block_name=None):
         lookup = StreamValue.BlockNameLookup(self, find_all=True)
-        if block_name:
-            return lookup[block_name]
-        else:
-            return lookup
+        return lookup[block_name] if block_name else lookup
 
     def first_block_by_name(self, block_name=None):
         lookup = StreamValue.BlockNameLookup(self, find_all=False)
-        if block_name:
-            return lookup[block_name]
-        else:
-            return lookup
+        return lookup[block_name] if block_name else lookup
 
     def __eq__(self, other):
         if not isinstance(other, StreamValue) or len(other) != len(self):
@@ -743,8 +726,7 @@ class StreamBlockAdapter(Adapter):
                 "ADD": _("Add"),
             },
         }
-        help_text = getattr(block.meta, "help_text", None)
-        if help_text:
+        if help_text := getattr(block.meta, "help_text", None):
             meta["helpText"] = help_text
             meta["helpIcon"] = get_help_icon()
 

@@ -67,8 +67,7 @@ class AbstractDocument(CollectionMember, index.Indexed, models.Model):
 
         More info : https://docs.djangoproject.com/en/3.1/ref/validators/#fileextensionvalidator
         """
-        allowed_extensions = getattr(settings, "WAGTAILDOCS_EXTENSIONS", None)
-        if allowed_extensions:
+        if allowed_extensions := getattr(settings, "WAGTAILDOCS_EXTENSIONS", None):
             validate = FileExtensionValidator(allowed_extensions)
             validate(self.file)
 

@@ -280,7 +280,7 @@ class TestBulkPublishIncludingDescendants(WagtailTestUtils, TestCase):
             for grandchild_page in grandchild_pages:
                 child_page.add_child(instance=grandchild_page)
 
-        for child_page, grandchild_pages in self.grandchildren_pages.items():
+        for grandchild_pages in self.grandchildren_pages.values():
             for grandchild_page in grandchild_pages:
                 grandchild_page.content = grandchild_page.content.replace(
                     "Hello world", "Hello grandchild"

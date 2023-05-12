@@ -95,9 +95,9 @@ class PreserveURLParametersMixin:
         """
         if self._preserved_param_string:
             if "?" in url:
-                url += "&" + self._preserved_param_string
+                url += f"&{self._preserved_param_string}"
             else:
-                url += "?" + self._preserved_param_string
+                url += f"?{self._preserved_param_string}"
 
         return url
 
@@ -138,10 +138,7 @@ class BaseChooseView(
             objects = objects.order_by(*self.ordering)
         elif self.ordering:
             objects = objects.order_by(self.ordering)
-        elif objects.ordered:
-            # Preserve the model-level ordering if specified
-            pass
-        else:
+        elif not objects.ordered:
             # fall back on PK to ensure pagination is consistent
             objects = objects.order_by("pk")
 
@@ -150,23 +147,22 @@ class BaseChooseView(
     def get_filter_form_class(self):
         if self.filter_form_class:
             return self.filter_form_class
-        else:
-            bases = [BaseFilterForm]
-            if self.model_class:
-                if class_is_indexed(self.model_class):
-                    bases.insert(0, SearchFilterMixin)
-                if issubclass(self.model_class, CollectionMember):
-                    bases.insert(0, CollectionFilterMixin)
+        bases = [BaseFilterForm]
+        if self.model_class:
+            if class_is_indexed(self.model_class):
+                bases.insert(0, SearchFilterMixin)
+            if issubclass(self.model_class, CollectionMember):
+                bases.insert(0, CollectionFilterMixin)
 
-                i18n_enabled = getattr(settings, "WAGTAIL_I18N_ENABLED", False)
-                if i18n_enabled and issubclass(self.model_class, TranslatableMixin):
-                    bases.insert(0, LocaleFilterMixin)
+            i18n_enabled = getattr(settings, "WAGTAIL_I18N_ENABLED", False)
+            if i18n_enabled and issubclass(self.model_class, TranslatableMixin):
+                bases.insert(0, LocaleFilterMixin)
 
-            return type(
-                "FilterForm",
-                tuple(bases),
-                {},
-            )
+        return type(
+            "FilterForm",
+            tuple(bases),
+            {},
+        )
 
     def get_filter_form(self):
         FilterForm = self.get_filter_form_class()
@@ -316,20 +312,17 @@ class CreationFormMixin(ModelLookupMixin, PreserveURLParametersMixin):
     def get_creation_form_kwargs(self):
         kwargs = {}
         if self.request.method in ("POST", "PUT"):
-            kwargs.update(
-                {
-                    "data": self.request.POST,
-                    "files": self.request.FILES,
-                }
-            )
+            kwargs |= {
+                "data": self.request.POST,
+                "files": self.request.FILES,
+            }
         return kwargs
 
     def get_creation_form(self):
-        form_class = self.get_creation_form_class()
-        if not form_class:
+        if form_class := self.get_creation_form_class():
+            return form_class(**self.get_creation_form_kwargs())
+        else:
             return None
-
-        return form_class(**self.get_creation_form_kwargs())
 
     def get_create_url(self):
         if not self.create_url_name:
@@ -369,8 +362,7 @@ class ChooseViewMixin:
         )
 
         if context["can_create"]:
-            creation_form = self.get_creation_form()
-            if creation_form:
+            if creation_form := self.get_creation_form():
                 context.update(self.get_creation_form_context_data(creation_form))
 
         return context
@@ -543,7 +535,7 @@ class CreateViewMixin:
 
     def get_reshow_creation_form_response(self):
         context = {"view": self}
-        context.update(self.get_creation_form_context_data(self.form))
+        context |= self.get_creation_form_context_data(self.form)
         response_html = render_to_string(
             self.creation_form_template_name, context, self.request
         )

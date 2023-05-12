@@ -158,10 +158,9 @@ class SpreadsheetExportMixin:
 
     def to_row_dict(self, item):
         """Returns an OrderedDict (in the order given by list_export) of the exportable information for a model instance"""
-        row_dict = OrderedDict(
+        return OrderedDict(
             (field, multigetattr(item, field)) for field in self.list_export
         )
-        return row_dict
 
     def get_preprocess_function(self, field, value, export_format):
         """Returns the preprocessing function for a given field name, field value, and export format"""
@@ -171,21 +170,20 @@ class SpreadsheetExportMixin:
         if export_format in format_dict:
             return format_dict[export_format]
 
-        # Otherwise check for a value class specific function
-        for value_classes, format_dict in self.custom_value_preprocess.items():
-            if isinstance(value, value_classes) and export_format in format_dict:
-                return format_dict[export_format]
-
-        # Finally resort to force_str to prevent encoding errors
-        return force_str
+        return next(
+            (
+                format_dict[export_format]
+                for value_classes, format_dict in self.custom_value_preprocess.items()
+                if isinstance(value, value_classes)
+                and export_format in format_dict
+            ),
+            force_str,
+        )
 
     def preprocess_field_value(self, field, value, export_format):
         """Preprocesses a field value before writing it to the spreadsheet"""
         preprocess_function = self.get_preprocess_function(field, value, export_format)
-        if preprocess_function is not None:
-            return preprocess_function(value)
-        else:
-            return value
+        return preprocess_function(value) if preprocess_function is not None else value
 
     def generate_xlsx_row(self, worksheet, row_dict, date_format=None):
         """Generate cells to append to the worksheet"""
@@ -207,8 +205,7 @@ class SpreadsheetExportMixin:
 
     def get_heading(self, queryset, field):
         """Get the heading label for a given field for a spreadsheet generated from queryset"""
-        heading_override = self.export_headings.get(field)
-        if heading_override:
+        if heading_override := self.export_headings.get(field):
             return force_str(heading_override)
         try:
             return force_str(queryset.model._meta.get_field(field).verbose_name.title())
@@ -261,9 +258,9 @@ class SpreadsheetExportMixin:
         stream = self.stream_csv(queryset)
 
         response = StreamingHttpResponse(stream, content_type="text/csv")
-        response["Content-Disposition"] = 'attachment; filename="{}.csv"'.format(
-            self.get_filename()
-        )
+        response[
+            "Content-Disposition"
+        ] = f'attachment; filename="{self.get_filename()}.csv"'
         return response
 
     def as_spreadsheet(self, queryset, spreadsheet_format):
@@ -276,7 +273,7 @@ class SpreadsheetExportMixin:
     def get_export_url(self, format):
         params = self.request.GET.copy()
         params["export"] = format
-        return self.request.path + "?" + params.urlencode()
+        return f"{self.request.path}?{params.urlencode()}"
 
     @property
     def xlsx_export_url(self):

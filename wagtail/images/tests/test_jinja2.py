@@ -60,14 +60,14 @@ class TestImagesJinja(TestCase):
         Get the generated filename for a resized image
         """
         name, ext = os.path.splitext(os.path.basename(image.file.name))
-        return "{}images/{}.{}{}".format(settings.MEDIA_URL, name, filterspec, ext)
+        return f"{settings.MEDIA_URL}images/{name}.{filterspec}{ext}"
 
     def test_image(self):
         self.assertHTMLEqual(
-            self.render('{{ image(myimage, "width-200") }}', {"myimage": self.image}),
-            '<img alt="Test image" src="{}" width="200" height="150">'.format(
-                self.get_image_filename(self.image, "width-200")
+            self.render(
+                '{{ image(myimage, "width-200") }}', {"myimage": self.image}
             ),
+            f'<img alt="Test image" src="{self.get_image_filename(self.image, "width-200")}" width="200" height="150">',
         )
 
     def test_image_attributes(self):
@@ -76,9 +76,7 @@ class TestImagesJinja(TestCase):
                 '{{ image(myimage, "width-200", alt="alternate", class="test") }}',
                 {"myimage": self.image},
             ),
-            '<img alt="alternate" src="{}" width="200" height="150" class="test">'.format(
-                self.get_image_filename(self.image, "width-200")
-            ),
+            f'<img alt="alternate" src="{self.get_image_filename(self.image, "width-200")}" width="200" height="150" class="test">',
         )
 
     def test_image_assignment(self):
@@ -120,9 +118,7 @@ class TestImagesJinja(TestCase):
                 '{{ image(myimage, "width-200|jpegquality-40") }}',
                 {"myimage": self.image},
             ),
-            '<img alt="Test image" src="{}" width="200" height="150">'.format(
-                self.get_image_filename(self.image, "width-200.jpegquality-40")
-            ),
+            f'<img alt="Test image" src="{self.get_image_filename(self.image, "width-200.jpegquality-40")}" width="200" height="150">',
         )
 
     def test_image_url(self):
@@ -130,7 +126,7 @@ class TestImagesJinja(TestCase):
             self.render(
                 '{{ image_url(myimage, "width-200") }}', {"myimage": self.image}
             ),
-            "/images/.*/width-200/{}".format(self.image.file.name.split("/")[-1]),
+            f'/images/.*/width-200/{self.image.file.name.split("/")[-1]}',
         )
 
     def test_image_url_custom_view(self):
@@ -139,7 +135,5 @@ class TestImagesJinja(TestCase):
                 '{{ image_url(myimage, "width-200", "wagtailimages_serve_custom_view") }}',
                 {"myimage": self.image},
             ),
-            "/testimages/custom_view/.*/width-200/{}".format(
-                self.image.file.name.split("/")[-1]
-            ),
+            f'/testimages/custom_view/.*/width-200/{self.image.file.name.split("/")[-1]}',
         )

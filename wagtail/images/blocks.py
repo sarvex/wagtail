@@ -21,10 +21,7 @@ class ImageChooserBlock(ChooserBlock):
         return AdminImageChooser()
 
     def render_basic(self, value, context=None):
-        if value:
-            return get_rendition_or_not_found(value, "original").img_tag()
-        else:
-            return ""
+        return get_rendition_or_not_found(value, "original").img_tag() if value else ""
 
     def get_comparison_class(self):
         return ImageChooserBlockComparison

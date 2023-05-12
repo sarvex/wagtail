@@ -42,13 +42,12 @@ class BaseDocumentForm(BaseCollectionMemberForm):
         if "file" in self.changed_data:
             self.instance._set_document_file_metadata()
 
-        if commit:
-            if "file" in self.changed_data and self.original_file:
-                # If providing a new document file, delete the old one.
-                # NB Doing this via original_file.delete() clears the file field,
-                # which definitely isn't what we want...
-                self.original_file.storage.delete(self.original_file.name)
-                self.original_file = None
+        if commit and "file" in self.changed_data and self.original_file:
+            # If providing a new document file, delete the old one.
+            # NB Doing this via original_file.delete() clears the file field,
+            # which definitely isn't what we want...
+            self.original_file.storage.delete(self.original_file.name)
+            self.original_file = None
 
         super().save(commit=commit)
 
@@ -63,14 +62,14 @@ class BaseDocumentForm(BaseCollectionMemberForm):
 
 
 def get_document_base_form():
-    base_form_override = getattr(settings, "WAGTAILDOCS_DOCUMENT_FORM_BASE", "")
-    if base_form_override:
+    if base_form_override := getattr(
+        settings, "WAGTAILDOCS_DOCUMENT_FORM_BASE", ""
+    ):
         from django.utils.module_loading import import_string
 
-        base_form = import_string(base_form_override)
+        return import_string(base_form_override)
     else:
-        base_form = BaseDocumentForm
-    return base_form
+        return BaseDocumentForm
 
 
 def get_document_form(model):

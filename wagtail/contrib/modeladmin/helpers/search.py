@@ -40,7 +40,8 @@ class DjangoORMSearchHandler(BaseSearchHandler):
             return queryset
 
         orm_lookups = [
-            "%s__icontains" % str(search_field) for search_field in self.search_fields
+            f"{str(search_field)}__icontains"
+            for search_field in self.search_fields
         ]
         for bit in search_term.split():
             or_queries = [Q(**{orm_lookup: bit}) for orm_lookup in orm_lookups]

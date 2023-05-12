@@ -49,32 +49,31 @@ def search(request):
     content_types = []
     ordering = None
 
-    if "ordering" in request.GET:
-        if request.GET["ordering"] in [
-            "title",
-            "-title",
-            "latest_revision_created_at",
-            "-latest_revision_created_at",
-            "live",
-            "-live",
-        ]:
-            ordering = request.GET["ordering"]
+    if "ordering" in request.GET and request.GET["ordering"] in [
+        "title",
+        "-title",
+        "latest_revision_created_at",
+        "-latest_revision_created_at",
+        "live",
+        "-live",
+    ]:
+        ordering = request.GET["ordering"]
 
-            if ordering == "title":
-                pages = pages.order_by("title")
-            elif ordering == "-title":
-                pages = pages.order_by("-title")
+        if ordering == "-latest_revision_created_at":
+            pages = pages.order_by("-latest_revision_created_at")
 
-            if ordering == "latest_revision_created_at":
-                pages = pages.order_by("latest_revision_created_at")
-            elif ordering == "-latest_revision_created_at":
-                pages = pages.order_by("-latest_revision_created_at")
+        elif ordering == "-live":
+            pages = pages.order_by("-live")
 
-            if ordering == "live":
-                pages = pages.order_by("live")
-            elif ordering == "-live":
-                pages = pages.order_by("-live")
+        elif ordering == "-title":
+            pages = pages.order_by("-title")
 
+        elif ordering == "latest_revision_created_at":
+            pages = pages.order_by("latest_revision_created_at")
+        elif ordering == "live":
+            pages = pages.order_by("live")
+        elif ordering == "title":
+            pages = pages.order_by("title")
     if "content_type" in request.GET:
         try:
             app_label, model_name = request.GET["content_type"].split(".")

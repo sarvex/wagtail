@@ -28,7 +28,7 @@ class FilteredSelect(forms.Select):
             "data-filter-field": self.filter_field,
         }
         if extra_attrs:
-            my_attrs.update(extra_attrs)
+            my_attrs |= extra_attrs
 
         return super().build_attrs(base_attrs, my_attrs)
 

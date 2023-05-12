@@ -39,19 +39,19 @@ def br(props):
 
 def block_fallback(props):
     type_ = props["block"]["type"]
-    logging.error('Missing config for "%s". Deleting block.' % type_)
+    logging.error(f'Missing config for "{type_}". Deleting block.')
     return None
 
 
 def entity_fallback(props):
     type_ = props["entity"]["type"]
-    logging.warning('Missing config for "%s". Deleting entity' % type_)
+    logging.warning(f'Missing config for "{type_}". Deleting entity')
     return None
 
 
 def style_fallback(props):
     type_ = props["inline_style_range"]["style"]
-    logging.warning('Missing config for "%s". Deleting style.' % type_)
+    logging.warning(f'Missing config for "{type_}". Deleting style.')
     return props["children"]
 
 

@@ -61,7 +61,7 @@ def adapter(js_constructor, base=Adapter):
 
     def _wrapper(cls):
         ClassAdapter = type(
-            cls.__name__ + "Adapter",
+            f"{cls.__name__}Adapter",
             (base,),
             {
                 "js_constructor": js_constructor,

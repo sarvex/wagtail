@@ -91,9 +91,8 @@ class DeleteView(generic.DeleteView):
     def form_valid(self, form):
         if self.can_delete(self.get_object()):
             return super().form_valid(form)
-        else:
-            messages.error(self.request, self.cannot_delete_message)
-            return super().get(self.request)
+        messages.error(self.request, self.cannot_delete_message)
+        return super().get(self.request)
 
 
 class LocaleViewSet(ModelViewSet):

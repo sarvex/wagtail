@@ -363,7 +363,7 @@ class TestRenditions(TestCase):
         ren_img = self.image.get_rendition("original")
         full_url = ren_img.full_url
         img_name = ren_img.file.name.split("/")[1]
-        self.assertEqual(full_url, "http://testserver/media/images/{}".format(img_name))
+        self.assertEqual(full_url, f"http://testserver/media/images/{img_name}")
 
     @override_settings(
         CACHES={
@@ -375,9 +375,7 @@ class TestRenditions(TestCase):
     def test_renditions_cache_backend(self):
         cache = caches["renditions"]
         rendition = self.image.get_rendition("width-500")
-        rendition_cache_key = "image-{}-{}-{}".format(
-            rendition.image.id, rendition.focal_point_key, rendition.filter_spec
-        )
+        rendition_cache_key = f"image-{rendition.image.id}-{rendition.focal_point_key}-{rendition.filter_spec}"
 
         # Check rendition is saved to cache
         self.assertEqual(cache.get(rendition_cache_key), rendition)
@@ -485,7 +483,7 @@ class TestPrefetchRenditions(TestCase):
         self.event_pages_pks = []
 
         event_pages = EventPage.objects.all()[:3]
-        for i, page in enumerate(event_pages):
+        for page in event_pages:
             page.feed_image = image = Image.objects.create(
                 title="Test image {i}",
                 file=get_test_image_file(),
@@ -677,8 +675,7 @@ class TestIssue613(WagtailTestUtils, TestCase):
             "file": SimpleUploadedFile(
                 "test.png", get_test_image_file().file.getvalue()
             ),
-        }
-        post_data.update(params)
+        } | params
         response = self.client.post(reverse("wagtailimages:add"), post_data)
 
         # Should redirect back to index
@@ -702,11 +699,9 @@ class TestIssue613(WagtailTestUtils, TestCase):
             file=get_test_image_file(),
         )
 
-        # Edit it
         post_data = {
             "title": "Edited",
-        }
-        post_data.update(params)
+        } | params
         response = self.client.post(
             reverse("wagtailimages:edit", args=(self.image.id,)), post_data
         )

@@ -29,6 +29,5 @@ def get_image_model():
         )
     except LookupError:
         raise ImproperlyConfigured(
-            "WAGTAILIMAGES_IMAGE_MODEL refers to model '%s' that has not been installed"
-            % model_string
+            f"WAGTAILIMAGES_IMAGE_MODEL refers to model '{model_string}' that has not been installed"
         )

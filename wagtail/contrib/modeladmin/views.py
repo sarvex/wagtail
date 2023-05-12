@@ -150,8 +150,7 @@ class WMABaseView(TemplateView):
         context = {
             "view": self,
             "model_admin": self.model_admin,
-        }
-        context.update(kwargs)
+        } | kwargs
         return super().get_context_data(**context)
 
 
@@ -161,8 +160,7 @@ class ModelFormView(WMABaseView, FormView):
         self.edit_handler = self.get_edit_handler()
 
     def get_form(self):
-        form = super().get_form()
-        return form
+        return super().get_form()
 
     def get_edit_handler(self):
         edit_handler = self.model_admin.get_edit_handler()
@@ -204,8 +202,7 @@ class ModelFormView(WMABaseView, FormView):
             "form": form,
             "prepopulated_fields": prepopulated_fields,
             "media": self.media + bound_panel.media + form.media,
-        }
-        context.update(kwargs)
+        } | kwargs
         return super().get_context_data(**context)
 
     def get_prepopulated_fields(self, form):
@@ -213,10 +210,9 @@ class ModelFormView(WMABaseView, FormView):
         for field_name, dependencies in self.model_admin.get_prepopulated_fields(
             self.request
         ).items():
-            missing_dependencies = [
+            if missing_dependencies := [
                 f"'{f}'" for f in dependencies if f not in form.fields
-            ]
-            if len(missing_dependencies) != 0:
+            ]:
                 missing_deps_string = ", ".join(missing_dependencies)
                 dependency_string = (
                     "dependencies" if len(missing_dependencies) > 1 else "dependency"
@@ -298,8 +294,7 @@ class InstanceSpecificView(WMABaseView):
         return self.url_helper.get_action_url("delete", self.pk_quoted)
 
     def get_context_data(self, **kwargs):
-        context = {"instance": self.instance}
-        context.update(kwargs)
+        context = {"instance": self.instance} | kwargs
         return super().get_context_data(**context)
 
 
@@ -371,8 +366,7 @@ class IndexView(SpreadsheetExportMixin, WMABaseView):
 
     def get_heading(self, queryset, field):
         """Get headings for exported spreadsheet column for the relevant field"""
-        heading_override = self.export_headings.get(field)
-        if heading_override:
+        if heading_override := self.export_headings.get(field):
             return force_str(heading_override)
         return force_str(
             label_for_field(
@@ -499,7 +493,7 @@ class IndexView(SpreadsheetExportMixin, WMABaseView):
                     del p[k]
             else:
                 p[k] = v
-        return "?%s" % urlencode(sorted(p.items()))
+        return f"?{urlencode(sorted(p.items()))}"
 
     def _get_default_ordering(self):
         ordering = []
@@ -512,9 +506,7 @@ class IndexView(SpreadsheetExportMixin, WMABaseView):
     def get_default_ordering(self, request):
         if self.model_admin.get_ordering(request):
             return self.model_admin.get_ordering(request)
-        if self.opts.ordering:
-            return self.opts.ordering
-        return ()
+        return self.opts.ordering if self.opts.ordering else ()
 
     def get_ordering_field(self, field_name):
         """
@@ -576,9 +568,9 @@ class IndexView(SpreadsheetExportMixin, WMABaseView):
         # database backends.
         pk_name = self.opts.pk.name
 
-        if not (set(ordering) & {"pk", "-pk", pk_name, "-" + pk_name}):
+        if not set(ordering) & {"pk", "-pk", pk_name, f"-{pk_name}"}:
             # ordering isn't already being applied to pk
-            ordering.append("-" + pk_name)
+            ordering.append(f"-{pk_name}")
 
         return ordering
 
@@ -677,13 +669,13 @@ class IndexView(SpreadsheetExportMixin, WMABaseView):
         if self.select_related is True:
             return qs.select_related()
 
-        if self.select_related is False:
-            if self.has_related_field_in_list_display():
-                return qs.select_related()
+        if (
+            self.select_related is False
+            and self.has_related_field_in_list_display()
+        ):
+            return qs.select_related()
 
-        if self.select_related:
-            return qs.select_related(*self.select_related)
-        return qs
+        return qs.select_related(*self.select_related) if self.select_related else qs
 
     def has_related_field_in_list_display(self):
         for field_name in self.list_display:
@@ -724,14 +716,12 @@ class IndexView(SpreadsheetExportMixin, WMABaseView):
             allowed_parent_types = [m._meta.verbose_name for m in models]
             valid_parents = self.permission_helper.get_valid_parent_pages(user)
             valid_parent_count = valid_parents.count()
-            context.update(
-                {
-                    "no_valid_parents": not valid_parent_count,
-                    "required_parent_types": allowed_parent_types,
-                }
-            )
+            context |= {
+                "no_valid_parents": not valid_parent_count,
+                "required_parent_types": allowed_parent_types,
+            }
 
-        context.update(kwargs)
+        context |= kwargs
         return super().get_context_data(**context)
 
     def get_template_names(self):
@@ -768,24 +758,21 @@ class CreateView(ModelFormView):
         if getattr(settings, "WAGTAIL_I18N_ENABLED", False) and issubclass(
             self.model, TranslatableMixin
         ):
-            selected_locale = self.request.GET.get("locale")
-            if selected_locale:
+            if selected_locale := self.request.GET.get("locale"):
                 locale = get_object_or_404(Locale, language_code=selected_locale)
             else:
                 locale = Locale.get_default()
 
-            kwargs.update(
-                {
-                    "locale": locale,
-                    "translations": [
-                        {
-                            "locale": locale,
-                            "url": self.create_url + "?locale=" + locale.language_code,
-                        }
-                        for locale in Locale.objects.all().exclude(id=locale.id)
-                    ],
-                }
-            )
+            kwargs |= {
+                "locale": locale,
+                "translations": [
+                    {
+                        "locale": locale,
+                        "url": f"{self.create_url}?locale={locale.language_code}",
+                    }
+                    for locale in Locale.objects.all().exclude(id=locale.id)
+                ],
+            }
 
         return super().dispatch(request, *args, **kwargs)
 
@@ -820,8 +807,7 @@ class CreateView(ModelFormView):
         if getattr(settings, "WAGTAIL_I18N_ENABLED", False) and issubclass(
             self.model, TranslatableMixin
         ):
-            selected_locale = self.request.GET.get("locale")
-            if selected_locale:
+            if selected_locale := self.request.GET.get("locale"):
                 kwargs["instance"].locale = get_object_or_404(
                     Locale, language_code=selected_locale
                 )
@@ -856,12 +842,10 @@ class EditView(ModelFormView, InstanceSpecificView):
                 translations.append({"locale": locale, "url": url})
 
             if translations:
-                kwargs.update(
-                    {
-                        "locale": self.locale,
-                        "translations": translations,
-                    }
-                )
+                kwargs |= {
+                    "locale": self.locale,
+                    "translations": translations,
+                }
 
         return super().dispatch(request, *args, **kwargs)
 
@@ -879,8 +863,7 @@ class EditView(ModelFormView, InstanceSpecificView):
             "user_can_delete": self.permission_helper.user_can_delete_obj(
                 self.request.user, self.instance
             )
-        }
-        context.update(kwargs)
+        } | kwargs
         if self.model_admin.history_view_enabled:
             context["latest_log_entry"] = log_registry.get_logs_for_instance(
                 self.instance
@@ -943,9 +926,7 @@ class ChooseParentView(WMABaseView):
 
     def post(self, request, *args, **kargs):
         form = self.get_form(request)
-        if form.is_valid():
-            return self.form_valid(form)
-        return self.form_invalid(form)
+        return self.form_valid(form) if form.is_valid() else self.form_invalid(form)
 
     def form_valid(self, form):
         parent_pk = quote(form.cleaned_data["parent_page"].pk)
@@ -1017,8 +998,7 @@ class DeleteView(InstanceSpecificView):
                             linked_objects.append(obj)
                     else:
                         qs = getattr(self.instance, rel.get_accessor_name())
-                        for obj in qs.all():
-                            linked_objects.append(obj)
+                        linked_objects.extend(iter(qs.all()))
             context = self.get_context_data(
                 protected_error=True, linked_objects=linked_objects
             )
@@ -1052,12 +1032,10 @@ class InspectView(InstanceSpecificView):
                 translations.append({"locale": locale, "url": url})
 
             if translations:
-                kwargs.update(
-                    {
-                        "locale": self.locale,
-                        "translations": translations,
-                    }
-                )
+                kwargs |= {
+                    "locale": self.locale,
+                    "translations": translations,
+                }
 
         return super().dispatch(request, *args, **kwargs)
 
@@ -1080,12 +1058,9 @@ class InspectView(InstanceSpecificView):
 
         # First we check for a 'get_fieldname_display' property/method on
         # the model, and return the value of that, if present.
-        val_funct = getattr(self.instance, "get_%s_display" % field_name, None)
+        val_funct = getattr(self.instance, f"get_{field_name}_display", None)
         if val_funct is not None:
-            if callable(val_funct):
-                return val_funct()
-            return val_funct
-
+            return val_funct() if callable(val_funct) else val_funct
         # Now let's get the attribute value from the instance itself and see if
         # we can render something useful. raises AttributeError appropriately.
         val = getattr(self.instance, field_name)
@@ -1095,7 +1070,7 @@ class InspectView(InstanceSpecificView):
 
         if isinstance(val, models.QuerySet):
             if val.exists():
-                return ", ".join(["%s" % obj for obj in val])
+                return ", ".join([f"{obj}" for obj in val])
             return self.model_admin.get_empty_value_display(field_name)
 
         # wagtail.images might not be installed
@@ -1127,15 +1102,13 @@ class InspectView(InstanceSpecificView):
         """Render an image"""
         from wagtail.images.shortcuts import get_rendition_or_not_found
 
-        image = getattr(self.instance, field_name)
-        if image:
+        if image := getattr(self.instance, field_name):
             return get_rendition_or_not_found(image, "max-400x400").img_tag
         return self.model_admin.get_empty_value_display(field_name)
 
     def get_document_field_display(self, field_name, field):
         """Render a link to a document"""
-        document = getattr(self.instance, field_name)
-        if document:
+        if document := getattr(self.instance, field_name):
             return format_html(
                 '<a href="{}">{} <span class="meta">({}, {})</span></a>',
                 document.url,
@@ -1164,10 +1137,10 @@ class InspectView(InstanceSpecificView):
         Return a list of `label`/`value` dictionaries to represent the
         fields named by the model_admin class's `get_inspect_view_fields` method
         """
-        fields = []
-        for field_name in self.model_admin.get_inspect_view_fields():
-            fields.append(self.get_dict_for_field(field_name))
-        return fields
+        return [
+            self.get_dict_for_field(field_name)
+            for field_name in self.model_admin.get_inspect_view_fields()
+        ]
 
     def get_context_data(self, **kwargs):
         context = {
@@ -1175,8 +1148,7 @@ class InspectView(InstanceSpecificView):
             "buttons": self.button_helper.get_buttons_for_obj(
                 self.instance, exclude=["inspect"]
             ),
-        }
-        context.update(kwargs)
+        } | kwargs
         return super().get_context_data(**context)
 
     def get_template_names(self):

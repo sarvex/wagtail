@@ -92,13 +92,10 @@ class FieldBlockAdapter(Adapter):
             f"w-field--{camelcase_to_underscore(block.field.widget.__class__.__name__)}",
         ]
 
-        form_classname = getattr(block.meta, "form_classname", "")
-        if form_classname:
+        if form_classname := getattr(block.meta, "form_classname", ""):
             classname.append(form_classname)
 
-        # Provided for backwards compatibility. Replaced with 'form_classname'
-        legacy_classname = getattr(block.meta, "classname", "")
-        if legacy_classname:
+        if legacy_classname := getattr(block.meta, "classname", ""):
             classname.append(legacy_classname)
 
         meta = {
@@ -183,7 +180,7 @@ class TextBlock(FieldBlock):
         from wagtail.admin.widgets import AdminAutoHeightTextInput
 
         field_kwargs = {"widget": AdminAutoHeightTextInput(attrs={"rows": self.rows})}
-        field_kwargs.update(self.field_options)
+        field_kwargs |= self.field_options
         return forms.CharField(**field_kwargs)
 
     def get_searchable_content(self, value):
@@ -195,10 +192,7 @@ class TextBlock(FieldBlock):
 
 class BlockQuoteBlock(TextBlock):
     def render_basic(self, value, context=None):
-        if value:
-            return format_html("<blockquote>{0}</blockquote>", value)
-        else:
-            return ""
+        return format_html("<blockquote>{0}</blockquote>", value) if value else ""
 
     class Meta:
         icon = "openquote"
@@ -251,10 +245,7 @@ class DecimalBlock(FieldBlock):
         super().__init__(*args, **kwargs)
 
     def to_python(self, value):
-        if value is None:
-            return value
-        else:
-            return Decimal(value)
+        return value if value is None else Decimal(value)
 
     class Meta:
         icon = "decimal"
@@ -353,7 +344,7 @@ class DateBlock(FieldBlock):
         field_kwargs = {
             "widget": AdminDateInput(format=self.format),
         }
-        field_kwargs.update(self.field_options)
+        field_kwargs |= self.field_options
         return forms.DateField(**field_kwargs)
 
     def to_python(self, value):
@@ -386,7 +377,7 @@ class TimeBlock(FieldBlock):
         from wagtail.admin.widgets import AdminTimeInput
 
         field_kwargs = {"widget": AdminTimeInput(format=self.format)}
-        field_kwargs.update(self.field_options)
+        field_kwargs |= self.field_options
         return forms.TimeField(**field_kwargs)
 
     def to_python(self, value):
@@ -418,7 +409,7 @@ class DateTimeBlock(FieldBlock):
         field_kwargs = {
             "widget": AdminDateTimeInput(format=self.format),
         }
-        field_kwargs.update(self.field_options)
+        field_kwargs |= self.field_options
         return forms.DateTimeField(**field_kwargs)
 
     def to_python(self, value):
@@ -549,7 +540,7 @@ class BaseChoiceBlock(FieldBlock):
             for v1, v2 in local_choices:
                 if isinstance(v2, (list, tuple)):
                     # this is a named group, and v2 is the value list
-                    has_blank_choice = any([value in ("", None) for value, label in v2])
+                    has_blank_choice = any(value in ("", None) for value, label in v2)
                     if has_blank_choice:
                         break
                 else:
@@ -600,9 +591,8 @@ class ChoiceBlock(BaseChoiceBlock):
                 for k2, v2 in v:
                     if value == k2 or text_value == force_str(k2):
                         return [force_str(k), force_str(v2)]
-            else:
-                if value == k or text_value == force_str(k):
-                    return [force_str(v)]
+            elif value == k or text_value == force_str(k):
+                return [force_str(v)]
         return []  # Value was not found in the list of choices
 
 
@@ -634,11 +624,9 @@ class MultipleChoiceBlock(BaseChoiceBlock):
                 # This is an optgroup, so look inside the group for options
                 for k2, v2 in v:
                     if value == k2 or text_value == force_str(k2):
-                        content.append(force_str(k))
-                        content.append(force_str(v2))
-            else:
-                if value == k or text_value == force_str(k):
-                    content.append(force_str(v))
+                        content.extend((force_str(k), force_str(v2)))
+            elif value == k or text_value == force_str(k):
+                content.append(force_str(v))
         return content
 
 
@@ -742,11 +730,11 @@ class RawHTMLBlock(FieldBlock):
     def get_prep_value(self, value):
         # explicitly convert to a plain string, just in case we're using some serialisation method
         # that doesn't cope with SafeString values correctly
-        return str(value) + ""
+        return f"{str(value)}"
 
     def value_for_form(self, value):
         # need to explicitly mark as unsafe, or it'll output unescaped HTML in the textarea
-        return str(value) + ""
+        return f"{str(value)}"
 
     def value_from_form(self, value):
         return mark_safe(value)
@@ -779,14 +767,12 @@ class ChooserBlock(FieldBlock):
         )
 
     def to_python(self, value):
-        # the incoming serialised value should be None or an ID
         if value is None:
             return value
-        else:
-            try:
-                return self.model_class.objects.get(pk=value)
-            except self.model_class.DoesNotExist:
-                return None
+        try:
+            return self.model_class.objects.get(pk=value)
+        except self.model_class.DoesNotExist:
+            return None
 
     def bulk_to_python(self, values):
         """Return the model instances for the given list of primary keys.
@@ -800,20 +786,15 @@ class ChooserBlock(FieldBlock):
 
     def get_prep_value(self, value):
         # the native value (a model instance or None) should serialise to a PK or None
-        if value is None:
-            return None
-        else:
-            return value.pk
+        return None if value is None else value.pk
 
     def value_from_form(self, value):
-        # ModelChoiceField sometimes returns an ID, and sometimes an instance; we want the instance
         if value is None or isinstance(value, self.model_class):
             return value
-        else:
-            try:
-                return self.model_class.objects.get(pk=value)
-            except self.model_class.DoesNotExist:
-                return None
+        try:
+            return self.model_class.objects.get(pk=value)
+        except self.model_class.DoesNotExist:
+            return None
 
     def get_form_state(self, value):
         return self.widget.get_value_data(value)
@@ -877,12 +858,7 @@ class PageChooserBlock(ChooserBlock):
 
     @cached_property
     def target_models(self):
-        target_models = []
-
-        for target_model in self.page_type:
-            target_models.append(resolve_model_string(target_model))
-
-        return target_models
+        return [resolve_model_string(target_model) for target_model in self.page_type]
 
     @cached_property
     def widget(self):
@@ -918,7 +894,7 @@ class PageChooserBlock(ChooserBlock):
 
             for target_model in self.target_models:
                 opts = target_model._meta
-                target_models.append("{}.{}".format(opts.app_label, opts.object_name))
+                target_models.append(f"{opts.app_label}.{opts.object_name}")
 
             kwargs.pop("target_model", None)
             kwargs["page_type"] = target_models
@@ -953,5 +929,7 @@ block_classes = [
     RegexBlock,
     BlockQuoteBlock,
 ]
-DECONSTRUCT_ALIASES = {cls: "wagtail.blocks.%s" % cls.__name__ for cls in block_classes}
+DECONSTRUCT_ALIASES = {
+    cls: f"wagtail.blocks.{cls.__name__}" for cls in block_classes
+}
 __all__ = [cls.__name__ for cls in block_classes]

@@ -30,11 +30,9 @@ class WagtailPagination(BasePagination):
             raise BadRequestError("limit cannot be higher than %d" % limit_max)
 
         start = offset
-        stop = offset + limit
-
         self.view = view
         self.total_count = queryset.count()
-        return queryset[start:stop]
+        return queryset[start:start + limit]
 
     def get_paginated_response(self, data):
         data = OrderedDict(

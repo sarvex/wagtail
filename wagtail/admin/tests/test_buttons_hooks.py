@@ -169,7 +169,7 @@ class TestPageListingMoreButtonsHooks(TestButtonsHooks):
         base_url = reverse("wagtailadmin_pages:delete", args=[page.id])
 
         next_url = "a/random/url/"
-        full_url = base_url + "?" + urlencode({"next": next_url})
+        full_url = f"{base_url}?" + urlencode({"next": next_url})
 
         delete_button = next(
             page_listing_more_buttons(page, page_perms, next_url=next_url)
@@ -201,7 +201,7 @@ class TestPageListingMoreButtonsHooks(TestButtonsHooks):
         # check that any buttons after do correctly still include the next_url
         unpublish_base_url = reverse("wagtailadmin_pages:unpublish", args=[page.id])
         unpublish_button = next(buttons)
-        full_url = unpublish_base_url + "?" + urlencode({"next": next_url})
+        full_url = f"{unpublish_base_url}?" + urlencode({"next": next_url})
         self.assertEqual(unpublish_button.url, full_url)
 
     def test_reorder_button_visibility(self):
@@ -251,7 +251,7 @@ class TestPageHeaderButtonsHooks(TestButtonsHooks):
         base_url = reverse("wagtailadmin_pages:delete", args=[page.id])
 
         next_url = "a/random/url/"
-        full_url = base_url + "?" + urlencode({"next": next_url})
+        full_url = f"{base_url}?" + urlencode({"next": next_url})
 
         delete_button = next(page_header_buttons(page, page_perms, next_url=next_url))
 
@@ -291,5 +291,5 @@ class TestPageHeaderButtonsHooks(TestButtonsHooks):
         # check that any buttons after do correctly still include the next_url
         unpublish_base_url = reverse("wagtailadmin_pages:unpublish", args=[page.id])
         unpublish_button = next(buttons)
-        full_url = unpublish_base_url + "?" + urlencode({"next": next_url})
+        full_url = f"{unpublish_base_url}?" + urlencode({"next": next_url})
         self.assertEqual(unpublish_button.url, full_url)

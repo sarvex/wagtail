@@ -20,9 +20,9 @@ class SettingMenuItem(MenuItem):
         # Special-case FontAwesome icons to avoid the breaking changes for those customisations.
         if icon.startswith("fa-"):
             icon_name = ""
-            icon_classes = "icon icon-" + icon
+            icon_classes = f"icon icon-{icon}"
             if classnames:
-                classnames += " " + icon_classes
+                classnames += f" {icon_classes}"
             else:
                 classnames = icon_classes
         else:
@@ -135,9 +135,7 @@ class Registry(list):
         except LookupError:
             return None
         else:
-            if Model not in registry:
-                return None
-            return Model
+            return None if Model not in registry else Model
 
 
 registry = Registry()

@@ -171,9 +171,7 @@ class WorkflowView(ReportView):
         return get_latest_str(content_object)
 
     def get_filename(self):
-        return "workflow-report-{}".format(
-            datetime.datetime.today().strftime("%Y-%m-%d")
-        )
+        return f'workflow-report-{datetime.datetime.now().strftime("%Y-%m-%d")}'
 
     def get_queryset(self):
         editable_pages = Q(
@@ -232,9 +230,7 @@ class WorkflowTasksView(ReportView):
         return get_latest_str(content_object)
 
     def get_filename(self):
-        return "workflow-tasks-{}".format(
-            datetime.datetime.today().strftime("%Y-%m-%d")
-        )
+        return f'workflow-tasks-{datetime.datetime.now().strftime("%Y-%m-%d")}'
 
     def get_queryset(self):
         editable_pages = Q(

@@ -80,14 +80,14 @@ class BaseImageForm(BaseCollectionMemberForm):
 
 
 def get_image_base_form():
-    base_form_override = getattr(settings, "WAGTAILIMAGES_IMAGE_FORM_BASE", "")
-    if base_form_override:
+    if base_form_override := getattr(
+        settings, "WAGTAILIMAGES_IMAGE_FORM_BASE", ""
+    ):
         from django.utils.module_loading import import_string
 
-        base_form = import_string(base_form_override)
+        return import_string(base_form_override)
     else:
-        base_form = BaseImageForm
-    return base_form
+        return BaseImageForm
 
 
 def get_image_form(model):
@@ -159,16 +159,14 @@ class ImageInsertionForm(forms.Form):
         alt_text = self.cleaned_data["alt_text"]
         image_is_decorative = self.cleaned_data["image_is_decorative"]
 
-        # Empty the alt text value if the image is set to be decorative
         if image_is_decorative:
             return ""
-        else:
-            # Alt text is required if image is not decorative.
-            if not alt_text:
-                msg = _(
-                    "Please add some alt text for your image or mark it as decorative"
-                )
-                self.add_error("alt_text", msg)
+        # Alt text is required if image is not decorative.
+        if not alt_text:
+            msg = _(
+                "Please add some alt text for your image or mark it as decorative"
+            )
+            self.add_error("alt_text", msg)
         return alt_text
 
 

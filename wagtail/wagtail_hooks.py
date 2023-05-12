@@ -89,8 +89,7 @@ if getattr(settings, "WAGTAIL_WORKFLOW_ENABLED", True):
 
 @hooks.register("describe_collection_contents")
 def describe_collection_children(collection):
-    descendant_count = collection.get_descendants().count()
-    if descendant_count:
+    if descendant_count := collection.get_descendants().count():
         url = reverse("wagtailadmin_collections:index")
         return {
             "count": descendant_count,

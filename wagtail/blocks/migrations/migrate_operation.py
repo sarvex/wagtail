@@ -164,21 +164,20 @@ class MigrateStreamData(RunPython):
                         streamfield=getattr(model, self.field_name),
                     )
                 except utils.InvalidBlockDefError as e:
-                    if not revision_query_maker.get_is_live_or_latest_revision(
+                    if revision_query_maker.get_is_live_or_latest_revision(
                         revision
                     ):
-                        logger.exception(
-                            utils.InvalidBlockDefError(
-                                revision=revision, instance=instance
-                            )
-                        )
-                        continue
-                    else:
                         raise utils.InvalidBlockDefError(
                             revision=revision, instance=instance
                         ) from e
-                # - TODO add a return value to util to know if changes were made
-                # - TODO save changed only
+                    logger.exception(
+                        utils.InvalidBlockDefError(
+                            revision=revision, instance=instance
+                        )
+                    )
+                    continue
+                        # - TODO add a return value to util to know if changes were made
+                        # - TODO save changed only
 
             revision.content[self.field_name] = json.dumps(raw_data)
             updated_revisions_buffer.append(revision)
@@ -248,29 +247,26 @@ class Wagtail3RevisionQueryMaker(AbstractRevisionQueryMaker):
             self.instance_field_revision_ids.add(instance.live_revision_id)
 
     def _make_revision_query(self):
-        if self.revisions_from is not None:
-            # All revisions created after the given date.
-            revision_query = Q(
-                created_at__gte=self.revisions_from,
-                page_id__in=self.page_ids,
-            )
-            # All live revisions.
-            revision_query = revision_query | Q(id__in=self.instance_field_revision_ids)
-            # All latest revisions. For each revision, we check if it is the revision with the
-            # last `created_at` from all revisions with its `page_id`.
-            revision_query = revision_query | Q(
-                id__in=Subquery(
-                    self.RevisionModel.objects.filter(page_id=OuterRef("page_id"))
-                    .order_by("-created_at", "-id")
-                    .values_list("id", flat=True)[:1]
-                ),
-                page_id__in=self.page_ids,
-            )
-            return revision_query
-
-        # otherwise query all revisions for the page
-        else:
+        if self.revisions_from is None:
             return Q(page_id__in=self.page_ids)
+        # All revisions created after the given date.
+        revision_query = Q(
+            created_at__gte=self.revisions_from,
+            page_id__in=self.page_ids,
+        )
+        # All live revisions.
+        revision_query = revision_query | Q(id__in=self.instance_field_revision_ids)
+        # All latest revisions. For each revision, we check if it is the revision with the
+        # last `created_at` from all revisions with its `page_id`.
+        revision_query = revision_query | Q(
+            id__in=Subquery(
+                self.RevisionModel.objects.filter(page_id=OuterRef("page_id"))
+                .order_by("-created_at", "-id")
+                .values_list("id", flat=True)[:1]
+            ),
+            page_id__in=self.page_ids,
+        )
+        return revision_query
 
     def get_is_live_or_latest_revision(self, revision):
         if revision.id in self.instance_field_revision_ids:
@@ -330,21 +326,16 @@ class DefaultRevisionQueryMaker(AbstractRevisionQueryMaker):
         ContentType = self.apps.get_model("contenttypes", "ContentType")
         contenttype_id = ContentType.objects.get_for_model(self.model).id
 
-        # if revisions_from is given, then query only the revisions created after that
-        # datetime (and the latest and live revisions if they are not after revisions_from)
-        if self.revisions_from is not None:
-            # All revisions created after the given date.
-            revision_query = Q(
-                created_at__gte=self.revisions_from,
-                content_type_id=contenttype_id,
-            )
-            # All live and latest revisions
-            revision_query = revision_query | Q(id__in=self.instance_field_revision_ids)
-            return revision_query
-
-        # otherwise query all revisions for the model
-        else:
+        if self.revisions_from is None:
             return Q(content_type_id=contenttype_id)
+        # All revisions created after the given date.
+        revision_query = Q(
+            created_at__gte=self.revisions_from,
+            content_type_id=contenttype_id,
+        )
+        # All live and latest revisions
+        revision_query = revision_query | Q(id__in=self.instance_field_revision_ids)
+        return revision_query
 
     def get_is_live_or_latest_revision(self, revision):
         return revision.id in self.instance_field_revision_ids

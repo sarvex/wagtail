@@ -6,8 +6,7 @@ TASK_TYPES = []
 def get_concrete_descendants(model_class, inclusive=True):
     """Retrieves non-abstract descendants of the given model class. If `inclusive` is set to
     True, includes model_class"""
-    subclasses = model_class.__subclasses__()
-    if subclasses:
+    if subclasses := model_class.__subclasses__():
         for subclass in subclasses:
             yield from get_concrete_descendants(subclass)
     if inclusive and not model_class._meta.abstract:

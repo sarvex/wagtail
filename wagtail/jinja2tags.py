@@ -35,7 +35,7 @@ class WagtailCoreExtension(Extension):
         )
 
     def parse(self, parser):
-        parse_method = getattr(self, "parse_" + parser.stream.current.value)
+        parse_method = getattr(self, f"parse_{parser.stream.current.value}")
 
         return parse_method(parser)
 
@@ -66,19 +66,12 @@ class WagtailCoreExtension(Extension):
 
     def _include_block(self, value, context, use_context):
         if hasattr(value, "render_as_block"):
-            if use_context:
-                new_context = context.get_all()
-            else:
-                new_context = {}
-
+            new_context = context.get_all() if use_context else {}
             result = value.render_as_block(context=new_context)
         else:
             result = value
 
-        if context.eval_ctx.autoescape:
-            return escape(result)
-        else:
-            return Markup(result)
+        return escape(result) if context.eval_ctx.autoescape else Markup(result)
 
 
 # Nicer import names

@@ -60,9 +60,7 @@ class BaseObjectMixin:
 
     def get_pk(self):
         pk = self.kwargs[self.pk_url_kwarg]
-        if isinstance(pk, str):
-            return unquote(pk)
-        return pk
+        return unquote(pk) if isinstance(pk, str) else pk
 
     def get_object(self):
         if not self.model:
@@ -91,8 +89,7 @@ class BaseOperationView(BaseObjectMixin, View):
         return self.success_message
 
     def add_success_message(self):
-        success_message = self.get_success_message()
-        if success_message:
+        if success_message := self.get_success_message():
             messages.success(
                 self.request,
                 success_message,

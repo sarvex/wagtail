@@ -51,7 +51,7 @@ class TestSearchAreas(BaseSearchAreaTestCase):
         response = self.client.get(search_url, {"q": query, "active-option": "true"})
         self.assertContains(
             response,
-            test_string % (query, base_css + " nolink", icon),
+            test_string % (query, f"{base_css} nolink", icon),
             status_code=200,
             html=True,
         )

@@ -5,10 +5,11 @@ from wagtail.models import Page as RealPage
 
 
 def ancestor_of_q(page):
-    paths = [page.path[0:pos] for pos in range(0, len(page.path) + 1, page.steplen)[1:]]
-    q = Q(path__in=paths)
-
-    return q
+    paths = [
+        page.path[:pos]
+        for pos in range(0, len(page.path) + 1, page.steplen)[1:]
+    ]
+    return Q(path__in=paths)
 
 
 def create_default_workflows(apps, schema_editor):
@@ -57,7 +58,7 @@ def create_default_workflows(apps, schema_editor):
             # if no such task exists, create it
             group_names = " ".join([group.name for group in groups])
             task = GroupApprovalTask.objects.create(
-                name=group_names + " approval",
+                name=f"{group_names} approval",
                 content_type=group_approval_content_type,
                 active=True,
             )

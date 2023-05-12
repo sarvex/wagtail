@@ -73,8 +73,7 @@ class SearchFilterMixin(forms.Form):
 
     def filter(self, objects):
         objects = super().filter(objects)
-        search_query = self.cleaned_data.get("q")
-        if search_query:
+        if search_query := self.cleaned_data.get("q"):
             search_backend = get_search_backend()
             objects = search_backend.autocomplete(search_query, objects)
             self.is_searching = True
@@ -103,8 +102,7 @@ class CollectionFilterMixin(forms.Form):
             )
 
     def filter(self, objects):
-        collection_id = self.cleaned_data.get("collection_id")
-        if collection_id:
+        if collection_id := self.cleaned_data.get("collection_id"):
             self.is_filtering_by_collection = True
             objects = objects.filter(collection=collection_id)
         return super().filter(objects)
@@ -117,8 +115,7 @@ class LocaleFilterMixin(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        locales = Locale.objects.all()
-        if locales:
+        if locales := Locale.objects.all():
             self.fields["locale"] = forms.ChoiceField(
                 choices=[
                     (locale.language_code, locale.get_display_name())
@@ -129,8 +126,7 @@ class LocaleFilterMixin(forms.Form):
             )
 
     def filter(self, objects):
-        selected_locale_code = self.cleaned_data.get("locale")
-        if selected_locale_code:
+        if selected_locale_code := self.cleaned_data.get("locale"):
             selected_locale = Locale.objects.get(language_code=selected_locale_code)
             objects = objects.filter(locale=selected_locale)
         return super().filter(objects)

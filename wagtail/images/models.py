@@ -368,26 +368,22 @@ class AbstractImage(ImageFileMixin, CollectionMember, index.Indexed, models.Mode
 
     def get_suggested_focal_point(self):
         with self.get_willow_image() as willow:
-            faces = willow.detect_faces()
-
-            if faces:
+            if faces := willow.detect_faces():
                 # Create a bounding box around all faces
                 left = min(face[0] for face in faces)
                 top = min(face[1] for face in faces)
                 right = max(face[2] for face in faces)
                 bottom = max(face[3] for face in faces)
                 focal_point = Rect(left, top, right, bottom)
+            elif features := willow.detect_features():
+                # Create a bounding box around all features
+                left = min(feature[0] for feature in features)
+                top = min(feature[1] for feature in features)
+                right = max(feature[0] for feature in features)
+                bottom = max(feature[1] for feature in features)
+                focal_point = Rect(left, top, right, bottom)
             else:
-                features = willow.detect_features()
-                if features:
-                    # Create a bounding box around all features
-                    left = min(feature[0] for feature in features)
-                    top = min(feature[1] for feature in features)
-                    right = max(feature[0] for feature in features)
-                    bottom = max(feature[1] for feature in features)
-                    focal_point = Rect(left, top, right, bottom)
-                else:
-                    return None
+                return None
 
         # Add 20% to width and height and give it a minimum size
         x, y = focal_point.centroid
@@ -482,8 +478,7 @@ class AbstractImage(ImageFileMixin, CollectionMember, index.Indexed, models.Mode
         try:
             cache = caches["renditions"]
             key = Rendition.construct_cache_key(self.id, cache_key, filter.spec)
-            cached_rendition = cache.get(key)
-            if cached_rendition:
+            if cached_rendition := cache.get(key):
                 return cached_rendition
         except InvalidCacheBackendError:
             pass
@@ -567,13 +562,13 @@ class AbstractImage(ImageFileMixin, CollectionMember, index.Indexed, models.Mode
             + IMAGE_FORMAT_EXTENSIONS[generated_image.format_name]
         )
         if cache_key:
-            output_extension = cache_key + "." + output_extension
+            output_extension = f"{cache_key}.{output_extension}"
 
         # Truncate filename to prevent it going over 60 chars
         output_filename_without_extension = input_filename_without_extension[
             : (59 - len(output_extension))
         ]
-        output_filename = output_filename_without_extension + "." + output_extension
+        output_filename = f"{output_filename_without_extension}.{output_extension}"
 
         return File(generated_image.f, name=output_filename)
 
@@ -643,7 +638,7 @@ class Filter:
         # Search for operations
         registered_operations = {}
         for fn in hooks.get_hooks("register_image_operations"):
-            registered_operations.update(dict(fn()))
+            registered_operations |= dict(fn())
 
         # Build list of operation objects
         operations = []
@@ -651,9 +646,7 @@ class Filter:
             op_spec_parts = op_spec.split("-")
 
             if op_spec_parts[0] not in registered_operations:
-                raise InvalidFilterSpecError(
-                    "Unrecognised operation: %s" % op_spec_parts[0]
-                )
+                raise InvalidFilterSpecError(f"Unrecognised operation: {op_spec_parts[0]}")
 
             op_class = registered_operations[op_spec_parts[0]]
             operations.append(op_class(*op_spec_parts))
@@ -731,7 +724,7 @@ class Filter:
 
                 # Allow the user to override the conversions
                 conversion = getattr(settings, "WAGTAILIMAGES_FORMAT_CONVERSIONS", {})
-                default_conversions.update(conversion)
+                default_conversions |= conversion
 
                 # Get the converted output format falling back to the original
                 output_format = default_conversions.get(
@@ -740,11 +733,10 @@ class Filter:
 
             if output_format == "jpeg":
                 # Allow changing of JPEG compression quality
-                if "jpeg-quality" in env:
-                    quality = env["jpeg-quality"]
-                else:
-                    quality = getattr(settings, "WAGTAILIMAGES_JPEG_QUALITY", 85)
-
+                quality = env.get(
+                    "jpeg-quality",
+                    getattr(settings, "WAGTAILIMAGES_JPEG_QUALITY", 85),
+                )
                 # If the image has an alpha channel, give it a white background
                 if willow.has_alpha():
                     willow = willow.set_background_color_rgb((255, 255, 255))
@@ -781,15 +773,12 @@ class Filter:
         for operation in self.operations:
             for field in getattr(operation, "vary_fields", []):
                 value = getattr(image, field, "")
-                vary_parts.append(str(value))
+                vary_parts.append(value)
 
-        vary_string = "-".join(vary_parts)
-
-        # Return blank string if there are no vary fields
-        if not vary_string:
+        if vary_string := "-".join(vary_parts):
+            return hashlib.sha1(vary_string.encode("utf-8")).hexdigest()[:8]
+        else:
             return ""
-
-        return hashlib.sha1(vary_string.encode("utf-8")).hexdigest()[:8]
 
 
 class AbstractRendition(ImageFileMixin, models.Model):
@@ -852,8 +841,7 @@ class AbstractRendition(ImageFileMixin, models.Model):
 
     @cached_property
     def focal_point(self):
-        image_focal_point = self.image.get_focal_point()
-        if image_focal_point:
+        if image_focal_point := self.image.get_focal_point():
             transform = self.filter.get_transform(self.image)
             return image_focal_point.transform(transform)
 
@@ -871,11 +859,10 @@ class AbstractRendition(ImageFileMixin, models.Model):
             <div style="background-image: url('{{ image.url }}'); {{ image.background_position_style }}">
             </div>
         """
-        focal_point = self.focal_point
-        if focal_point:
+        if focal_point := self.focal_point:
             horz = int((focal_point.x * 100) // self.width)
             vert = int((focal_point.y * 100) // self.height)
-            return "background-position: {}% {}%;".format(horz, vert)
+            return f"background-position: {horz}% {vert}%;"
         else:
             return "background-position: 50% 50%;"
 
@@ -886,7 +873,7 @@ class AbstractRendition(ImageFileMixin, models.Model):
 
         attrs.update(extra_attributes)
 
-        return mark_safe("<img{}>".format(flatatt(attrs)))
+        return mark_safe(f"<img{flatatt(attrs)}>")
 
     def __html__(self):
         return self.img_tag()
@@ -899,27 +886,26 @@ class AbstractRendition(ImageFileMixin, models.Model):
     @classmethod
     def check(cls, **kwargs):
         errors = super(AbstractRendition, cls).check(**kwargs)
-        if not cls._meta.abstract:
-            if not any(
-                set(constraint) == {"image", "filter_spec", "focal_point_key"}
-                for constraint in cls._meta.unique_together
-            ):
-                errors.append(
-                    checks.Error(
-                        "Custom rendition model %r has an invalid unique_together setting"
-                        % cls,
-                        hint="Custom rendition models must include the constraint "
-                        "('image', 'filter_spec', 'focal_point_key') in their unique_together definition.",
-                        obj=cls,
-                        id="wagtailimages.E001",
-                    )
+        if not cls._meta.abstract and all(
+            set(constraint) != {"image", "filter_spec", "focal_point_key"}
+            for constraint in cls._meta.unique_together
+        ):
+            errors.append(
+                checks.Error(
+                    "Custom rendition model %r has an invalid unique_together setting"
+                    % cls,
+                    hint="Custom rendition models must include the constraint "
+                    "('image', 'filter_spec', 'focal_point_key') in their unique_together definition.",
+                    obj=cls,
+                    id="wagtailimages.E001",
                 )
+            )
 
         return errors
 
     @staticmethod
     def construct_cache_key(image_id, filter_cache_key, filter_spec):
-        return "image-{}-{}-{}".format(image_id, filter_cache_key, filter_spec)
+        return f"image-{image_id}-{filter_cache_key}-{filter_spec}"
 
     def purge_from_cache(self):
         try:

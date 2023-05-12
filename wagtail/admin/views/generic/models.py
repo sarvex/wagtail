@@ -58,10 +58,7 @@ else:
             # overly complex.
             self.object = self.get_object()
             form = self.get_form()
-            if form.is_valid():
-                return self.form_valid(form)
-            else:
-                return self.form_invalid(form)
+            return self.form_valid(form) if form.is_valid() else self.form_invalid(form)
 
         def form_valid(self, form):
             success_url = self.get_success_url()
@@ -118,9 +115,7 @@ class IndexView(
         return self.is_searchable
 
     def get_search_url(self):
-        if not self.is_searchable:
-            return None
-        return self.index_url_name
+        return None if not self.is_searchable else self.index_url_name
 
     def get_search_form(self):
         if self.model is None:
@@ -210,8 +205,7 @@ class IndexView(
 
         queryset = self._annotate_queryset_updated_at(queryset)
 
-        ordering = self.get_ordering()
-        if ordering:
+        if ordering := self.get_ordering():
             # Explicitly handle null values for the updated at column to ensure consistency
             # across database backends and match the behaviour in page explorer
             if ordering == "_updated_at":
@@ -271,7 +265,7 @@ class IndexView(
             )
 
         filters = {
-            field + "__icontains": self.search_query
+            f"{field}__icontains": self.search_query
             for field in self.search_fields or []
         }
         return queryset.filter(**filters)
@@ -336,8 +330,7 @@ class IndexView(
         orderings = []
         for col in self.columns:
             if col.sort_key:
-                orderings.append(col.sort_key)
-                orderings.append("-%s" % col.sort_key)
+                orderings.extend((col.sort_key, f"-{col.sort_key}"))
         return orderings
 
     def get_ordering(self):
@@ -416,10 +409,14 @@ class CreateView(
         self.action = self.get_action(request)
 
     def get_action(self, request):
-        for action in self.get_available_actions():
-            if request.POST.get(f"action-{action}"):
-                return action
-        return "create"
+        return next(
+            (
+                action
+                for action in self.get_available_actions()
+                if request.POST.get(f"action-{action}")
+            ),
+            "create",
+        )
 
     def get_available_actions(self):
         return self.actions
@@ -457,9 +454,7 @@ class CreateView(
         return [messages.button(self.get_edit_url(), _("Edit"))]
 
     def get_error_message(self):
-        if self.error_message is None:
-            return None
-        return self.error_message
+        return None if self.error_message is None else self.error_message
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -495,10 +490,7 @@ class CreateView(
         response = self.save_action()
 
         hook_response = self.run_after_hook()
-        if hook_response is not None:
-            return hook_response
-
-        return response
+        return hook_response if hook_response is not None else response
 
     def form_invalid(self, form):
         self.form = form
@@ -536,10 +528,14 @@ class EditView(
         self.action = self.get_action(request)
 
     def get_action(self, request):
-        for action in self.get_available_actions():
-            if request.POST.get(f"action-{action}"):
-                return action
-        return "edit"
+        return next(
+            (
+                action
+                for action in self.get_available_actions()
+                if request.POST.get(f"action-{action}")
+            ),
+            "edit",
+        )
 
     def get_available_actions(self):
         return self.actions
@@ -614,9 +610,7 @@ class EditView(
         ]
 
     def get_error_message(self):
-        if self.error_message is None:
-            return None
-        return self.error_message
+        return None if self.error_message is None else self.error_message
 
     def form_valid(self, form):
         self.form = form
@@ -626,10 +620,7 @@ class EditView(
         response = self.save_action()
 
         hook_response = self.run_after_hook()
-        if hook_response is not None:
-            return hook_response
-
-        return response
+        return hook_response if hook_response is not None else response
 
     def form_invalid(self, form):
         self.form = form
@@ -693,8 +684,7 @@ class DeleteView(
         return ReferenceIndex.get_grouped_references_to(self.object)
 
     def get_success_url(self):
-        next_url = get_valid_next_url_from_request(self.request)
-        if next_url:
+        if next_url := get_valid_next_url_from_request(self.request):
             return next_url
         if not self.index_url_name:
             raise ImproperlyConfigured(
@@ -780,9 +770,7 @@ class RevisionsCompareView(WagtailAdminTemplateMixin, TemplateView):
         return get_object_or_404(self.model, pk=unquote(self.pk))
 
     def get_edit_handler(self):
-        if self.edit_handler:
-            return self.edit_handler
-        return get_edit_handler(self.model)
+        return self.edit_handler if self.edit_handler else get_edit_handler(self.model)
 
     def get_page_subtitle(self):
         return str(self.object)
@@ -945,8 +933,7 @@ class UnpublishView(HookResponseMixin, WagtailAdminTemplateMixin, TemplateView):
             return hook_response
 
     def post(self, request, *args, **kwargs):
-        hook_response = self.unpublish()
-        if hook_response:
+        if hook_response := self.unpublish():
             return hook_response
 
         success_message = self.get_success_message()
@@ -1020,8 +1007,7 @@ class RevisionsUnscheduleView(WagtailAdminTemplateMixin, TemplateView):
         ]
 
     def get_next_url(self):
-        next_url = get_valid_next_url_from_request(self.request)
-        if next_url:
+        if next_url := get_valid_next_url_from_request(self.request):
             return next_url
 
         if not self.history_url_name:

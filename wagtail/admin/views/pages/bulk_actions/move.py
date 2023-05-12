@@ -52,12 +52,11 @@ class MoveBulkAction(PageBulkAction):
         return page.permissions_for_user(self.request.user).can_move()
 
     def get_success_message(self, num_parent_objects, num_child_objects):
-        success_message = ngettext(
+        return ngettext(
             "%(num_pages)d page has been moved",
             "%(num_pages)d pages have been moved",
             num_parent_objects,
         ) % {"num_pages": num_parent_objects}
-        return success_message
 
     def object_context(self, obj):
         context = super().object_context(obj)
@@ -127,14 +126,14 @@ class MoveBulkAction(PageBulkAction):
         }
 
     def prepare_action(self, pages, pages_without_access):
-        request = self.request
-        destination = self.cleaned_form.cleaned_data["chooser"]
         if (
             pages_without_access["pages_without_destination_access"]
             or pages_without_access["pages_with_duplicate_slugs"]
         ):
+            destination = self.cleaned_form.cleaned_data["chooser"]
             # this will be picked up by the form
             self.destination = destination
+            request = self.request
             return TemplateResponse(
                 request,
                 self.template_name,

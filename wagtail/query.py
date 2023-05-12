@@ -67,7 +67,7 @@ class TreeQuerySet(MP_NodeQuerySet):
 
     def ancestor_of_q(self, other, inclusive=False):
         paths = [
-            other.path[0:pos]
+            other.path[:pos]
             for pos in range(0, len(other.path) + 1, other.steplen)[1:]
         ]
         q = Q(path__in=paths)
@@ -389,9 +389,7 @@ class PageQuerySet(SearchableQuerySetMixin, TreeQuerySet):
         clone = self._clone()
         clone._defer_streamfields = True  # used by specific_iterator()
         streamfield_names = self.model.get_streamfield_names()
-        if not streamfield_names:
-            return clone
-        return clone.defer(*streamfield_names)
+        return clone if not streamfield_names else clone.defer(*streamfield_names)
 
     def specific(self, defer=False):
         """
@@ -402,10 +400,7 @@ class PageQuerySet(SearchableQuerySetMixin, TreeQuerySet):
         field values will be loaded and all specific fields will be deferred.
         """
         clone = self._clone()
-        if defer:
-            clone._iterable_class = DeferredSpecificIterable
-        else:
-            clone._iterable_class = SpecificIterable
+        clone._iterable_class = DeferredSpecificIterable if defer else SpecificIterable
         return clone
 
     def in_site(self, site):

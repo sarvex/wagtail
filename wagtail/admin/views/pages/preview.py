@@ -24,7 +24,7 @@ def view_draft(request, page_id):
 class PreviewOnEdit(GenericPreviewOnEdit):
     @property
     def session_key(self):
-        return "{}{}".format(self.session_key_prefix, self.kwargs["page_id"])
+        return f'{self.session_key_prefix}{self.kwargs["page_id"]}'
 
     def get_object(self):
         return get_object_or_404(
@@ -54,12 +54,7 @@ class PreviewOnEdit(GenericPreviewOnEdit):
 class PreviewOnCreate(PreviewOnEdit):
     @property
     def session_key(self):
-        return "{}{}-{}-{}".format(
-            self.session_key_prefix,
-            self.kwargs["content_type_app_name"],
-            self.kwargs["content_type_model_name"],
-            self.kwargs["parent_page_id"],
-        )
+        return f'{self.session_key_prefix}{self.kwargs["content_type_app_name"]}-{self.kwargs["content_type_model_name"]}-{self.kwargs["parent_page_id"]}'
 
     def get_object(self):
         content_type_app_name = self.kwargs["content_type_app_name"]

@@ -53,10 +53,6 @@ def runtests():
         warnings.filterwarnings(
             "default", category=DeprecationWarning, module=only_wagtail
         )
-    elif args.deprecation == "none":
-        # Deprecation warnings are ignored by default
-        pass
-
     if args.postgres:
         os.environ["DATABASE_ENGINE"] = "django.db.backends.postgresql"
 

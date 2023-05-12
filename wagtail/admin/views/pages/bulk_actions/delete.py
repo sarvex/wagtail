@@ -32,26 +32,26 @@ class DeleteBulkAction(PageBulkAction):
 
     def get_success_message(self, num_parent_objects, num_child_objects):
         if num_parent_objects == 1:
-            if num_child_objects == 0:
-                success_message = _("1 page has been deleted")
-            else:
-                success_message = ngettext(
+            return (
+                _("1 page has been deleted")
+                if num_child_objects == 0
+                else ngettext(
                     "1 page and %(num_child_objects)d child page have been deleted",
                     "1 page and %(num_child_objects)d child pages have been deleted",
                     num_child_objects,
-                ) % {"num_child_objects": num_child_objects}
+                )
+                % {"num_child_objects": num_child_objects}
+            )
+        elif num_child_objects == 0:
+            return _("%(num_parent_objects)d pages have been deleted") % {
+                "num_parent_objects": num_parent_objects
+            }
         else:
-            if num_child_objects == 0:
-                success_message = _(
-                    "%(num_parent_objects)d pages have been deleted"
-                ) % {"num_parent_objects": num_parent_objects}
-            else:
-                success_message = ngettext(
-                    "%(num_parent_objects)d pages and %(num_child_objects)d child page have been deleted",
-                    "%(num_parent_objects)d pages and %(num_child_objects)d child pages have been deleted",
-                    num_child_objects,
-                ) % {
-                    "num_child_objects": num_child_objects,
-                    "num_parent_objects": num_parent_objects,
-                }
-        return success_message
+            return ngettext(
+                "%(num_parent_objects)d pages and %(num_child_objects)d child page have been deleted",
+                "%(num_parent_objects)d pages and %(num_child_objects)d child pages have been deleted",
+                num_child_objects,
+            ) % {
+                "num_child_objects": num_child_objects,
+                "num_parent_objects": num_parent_objects,
+            }

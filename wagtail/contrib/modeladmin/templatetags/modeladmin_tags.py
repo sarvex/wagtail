@@ -27,7 +27,7 @@ def items_for_result(view, result, request):
     modeladmin = view.model_admin
     for field_name in view.list_display:
         empty_value_display = modeladmin.get_empty_value_display(field_name)
-        row_classes = ["field-%s" % field_name, "title"]
+        row_classes = [f"field-{field_name}", "title"]
         try:
             f, attr, value = lookup_field(field_name, result, modeladmin)
         except ObjectDoesNotExist:
@@ -52,10 +52,7 @@ def items_for_result(view, result, request):
             else:
                 if isinstance(f, models.ManyToOneRel):
                     field_val = getattr(result, f.name)
-                    if field_val is None:
-                        result_repr = empty_value_display
-                    else:
-                        result_repr = field_val
+                    result_repr = empty_value_display if field_val is None else field_val
                 else:
                     result_repr = display_for_field(value, f, empty_value_display)
 
@@ -99,10 +96,7 @@ def result_list(context):
     view = context["view"]
     object_list = context["object_list"]
     headers = list(result_headers(view))
-    num_sorted_fields = 0
-    for h in headers:
-        if h["sortable"] and h["sorted"]:
-            num_sorted_fields += 1
+    num_sorted_fields = sum(1 for h in headers if h["sortable"] and h["sorted"])
     context.update(
         {
             "result_headers": headers,
@@ -172,7 +166,7 @@ def result_row_display(context, index):
     row_attrs_dict["data-object-pk"] = obj.pk
     odd_or_even = "odd" if (index % 2 == 0) else "even"
     if "class" in row_attrs_dict:
-        row_attrs_dict["class"] += " %s" % odd_or_even
+        row_attrs_dict["class"] += f" {odd_or_even}"
     else:
         row_attrs_dict["class"] = odd_or_even
 
@@ -196,7 +190,7 @@ def result_row_value_display(context, index):
     field_name = model_admin.get_list_display(request)[index]
     if field_name == model_admin.get_list_display_add_buttons(request):
         add_action_buttons = True
-        item = mark_safe(item[0:-5])
+        item = mark_safe(item[:-5])
     context.update(
         {
             "item": item,
@@ -222,23 +216,24 @@ def prepopulated_slugs(context):
     if "prepopulated_fields" in context:
         prepopulated_fields.extend(context["prepopulated_fields"])
 
-    prepopulated_fields_json = []
-    for field in prepopulated_fields:
-        prepopulated_fields_json.append(
-            {
-                "id": "#%s" % field["field"].auto_id,
-                "name": field["field"].name,
-                "dependency_ids": [
-                    "#%s" % dependency.auto_id for dependency in field["dependencies"]
-                ],
-                "dependency_list": [
-                    dependency.name for dependency in field["dependencies"]
-                ],
-                "maxLength": field["field"].field.max_length or 50,
-                "allowUnicode": getattr(field["field"].field, "allow_unicode", False),
-            }
-        )
-
+    prepopulated_fields_json = [
+        {
+            "id": f'#{field["field"].auto_id}',
+            "name": field["field"].name,
+            "dependency_ids": [
+                f"#{dependency.auto_id}"
+                for dependency in field["dependencies"]
+            ],
+            "dependency_list": [
+                dependency.name for dependency in field["dependencies"]
+            ],
+            "maxLength": field["field"].field.max_length or 50,
+            "allowUnicode": getattr(
+                field["field"].field, "allow_unicode", False
+            ),
+        }
+        for field in prepopulated_fields
+    ]
     context.update(
         {
             "prepopulated_fields": prepopulated_fields,

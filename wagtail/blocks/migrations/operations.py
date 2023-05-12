@@ -46,7 +46,7 @@ class RenameStreamChildrenOperation(BaseBlockOperation):
 
     @property
     def operation_name_fragment(self):
-        return "rename_{}_to_{}".format(self.old_name, self.new_name)
+        return f"rename_{self.old_name}_to_{self.new_name}"
 
 
 @deconstructible
@@ -78,7 +78,7 @@ class RenameStructChildrenOperation(BaseBlockOperation):
 
     @property
     def operation_name_fragment(self):
-        return "rename_{}_to_{}".format(self.old_name, self.new_name)
+        return f"rename_{self.old_name}_to_{self.new_name}"
 
 
 @deconstructible
@@ -106,7 +106,7 @@ class RemoveStreamChildrenOperation(BaseBlockOperation):
 
     @property
     def operation_name_fragment(self):
-        return "remove_{}".format(self.name)
+        return f"remove_{self.name}"
 
 
 @deconstructible
@@ -134,7 +134,7 @@ class RemoveStructChildrenOperation(BaseBlockOperation):
 
     @property
     def operation_name_fragment(self):
-        return "remove_{}".format(self.name)
+        return f"remove_{self.name}"
 
 
 class StreamChildrenToListBlockOperation(BaseBlockOperation):
@@ -169,14 +169,12 @@ class StreamChildrenToListBlockOperation(BaseBlockOperation):
         return mapped_block_value
 
     def map_temp_blocks_to_list_items(self):
-        new_temp_blocks = []
-        for block in self.temp_blocks:
-            new_temp_blocks.append({**block, "type": "item"})
+        new_temp_blocks = [{**block, "type": "item"} for block in self.temp_blocks]
         self.temp_blocks = new_temp_blocks
 
     @property
     def operation_name_fragment(self):
-        return "{}_to_list_block_{}".format(self.block_name, self.list_block_name)
+        return f"{self.block_name}_to_list_block_{self.list_block_name}"
 
 
 class StreamChildrenToStreamBlockOperation(BaseBlockOperation):
@@ -212,7 +210,7 @@ class StreamChildrenToStreamBlockOperation(BaseBlockOperation):
 
     @property
     def operation_name_fragment(self):
-        return "{}_to_stream_block".format("_".join(self.block_names))
+        return f'{"_".join(self.block_names)}_to_stream_block'
 
 
 class AlterBlockValueOperation(BaseBlockOperation):
@@ -303,7 +301,7 @@ class StreamChildrenToStructBlockOperation(BaseBlockOperation):
 
     @property
     def operation_name_fragment(self):
-        return "{}_to_struct_block_{}".format(self.block_name, self.struct_block_name)
+        return f"{self.block_name}_to_struct_block_{self.struct_block_name}"
 
 
 class ListChildrenToStructBlockOperation(BaseBlockOperation):
@@ -312,16 +310,11 @@ class ListChildrenToStructBlockOperation(BaseBlockOperation):
         self.block_name = block_name
 
     def apply(self, block_value):
-        mapped_block_value = []
-
-        # In case there is data from the old list format (wagtail < 2.16), we use the generator
-        # to convert them into the new list format
-        for child_block in formatted_list_child_generator(block_value):
-            mapped_block_value.append(
-                {**child_block, "value": {self.block_name: child_block["value"]}}
-            )
-        return mapped_block_value
+        return [
+            {**child_block, "value": {self.block_name: child_block["value"]}}
+            for child_block in formatted_list_child_generator(block_value)
+        ]
 
     @property
     def operation_name_fragment(self):
-        return "list_block_items_to_{}".format(self.block_name)
+        return f"list_block_items_to_{self.block_name}"

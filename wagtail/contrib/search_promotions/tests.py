@@ -110,7 +110,7 @@ class TestSearchPromotionsIndexView(WagtailTestUtils, TestCase):
     def make_search_picks(self):
         for i in range(50):
             SearchPromotion.objects.create(
-                query=Query.get("query " + str(i)),
+                query=Query.get(f"query {str(i)}"),
                 page_id=1,
                 sort_order=0,
                 description="First search pick",
@@ -195,7 +195,7 @@ class TestSearchPromotionsIndexView(WagtailTestUtils, TestCase):
         )
 
         popularQuery = Query.get("optimal")
-        for i in range(50):
+        for _ in range(50):
             popularQuery.add_hit()
         SearchPromotion.objects.create(
             query=popularQuery,
@@ -205,7 +205,7 @@ class TestSearchPromotionsIndexView(WagtailTestUtils, TestCase):
         )
 
         popularQuery = Query.get("suboptimal")
-        for i in range(25):
+        for _ in range(25):
             popularQuery.add_hit()
         SearchPromotion.objects.create(
             query=popularQuery,
@@ -215,28 +215,28 @@ class TestSearchPromotionsIndexView(WagtailTestUtils, TestCase):
         )
 
         # ordered by querystring (reversed)
-        response = self.client.get(url + "?ordering=-query_string")
+        response = self.client.get(f"{url}?ordering=-query_string")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context["queries"][0].query_string, "zyzzyvas")
 
         # last page, still ordered by query string (reversed)
-        response = self.client.get(url + "?ordering=-query_string&p=3")
+        response = self.client.get(f"{url}?ordering=-query_string&p=3")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context["queries"][-1].query_string, "aardwolf")
 
         # ordered by querystring (not reversed)
-        response = self.client.get(url + "?ordering=query_string")
+        response = self.client.get(f"{url}?ordering=query_string")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context["queries"][0].query_string, "aardwolf")
 
         # ordered by sum of daily hits (reversed)
-        response = self.client.get(url + "?ordering=-views")
+        response = self.client.get(f"{url}?ordering=-views")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context["queries"][0].query_string, "optimal")
         self.assertEqual(response.context["queries"][1].query_string, "suboptimal")
 
         # ordered by sum of daily hits, last page (not reversed)
-        response = self.client.get(url + "?ordering=views&p=3")
+        response = self.client.get(f"{url}?ordering=views&p=3")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context["queries"][-1].query_string, "optimal")
         self.assertEqual(response.context["queries"][-2].query_string, "suboptimal")
@@ -504,21 +504,21 @@ class TestGarbageCollectManagementCommand(TestCase):
         # should be deleted by the search_garbage_collect command.
         query_ids_to_be_deleted = []
         for i in range(10):
-            q = Query.get("Hello {}".format(i))
+            q = Query.get(f"Hello {i}")
             q.add_hit(date=old_hit_date)
             query_ids_to_be_deleted.append(q.id)
 
         # Add 10 hits that are less than one week old. These ones should not be deleted.
         recent_query_ids = []
         for i in range(10):
-            q = Query.get("World {}".format(i))
+            q = Query.get(f"World {i}")
             q.add_hit(date=recent_hit_date)
             recent_query_ids.append(q.id)
 
         # Add 10 queries that are promoted. These ones should not be deleted.
         promoted_query_ids = []
         for i in range(10):
-            q = Query.get("Foo bar {}".format(i))
+            q = Query.get(f"Foo bar {i}")
             q.add_hit(date=old_hit_date)
             SearchPromotion.objects.create(
                 query=q, page_id=1, sort_order=0, description="Test"

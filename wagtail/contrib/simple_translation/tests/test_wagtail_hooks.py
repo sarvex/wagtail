@@ -78,11 +78,11 @@ class TestWagtailHooksButtons(Utils):
             user = get_user_model().objects.create_user(email="jos@example.com")
         else:
             user = get_user_model().objects.create_user(username="jos")
-        assert list(page_listing_more_buttons(root_page, self.PagePerms(user))) == []
+        assert not list(page_listing_more_buttons(root_page, self.PagePerms(user)))
 
         # No permissions, no button
         home_page = self.en_homepage
-        assert list(page_listing_more_buttons(root_page, self.PagePerms(user))) == []
+        assert not list(page_listing_more_buttons(root_page, self.PagePerms(user)))
 
         # Homepage is translated to all languages, no button
         perm = Permission.objects.get(codename="submit_translation")
@@ -97,7 +97,7 @@ class TestWagtailHooksButtons(Utils):
         group = Group.objects.get(name="Editors")
         user.groups.add(group)
         page_perms = self.PagePerms(user)
-        assert list(page_listing_more_buttons(home_page, page_perms)) == []
+        assert not list(page_listing_more_buttons(home_page, page_perms))
 
         # Page does not have translations yet... button!
         blog_page = self.en_blog_post
@@ -131,11 +131,10 @@ class TestConstructSyncedPageTreeListHook(Utils):
     @override_settings(WAGTAILSIMPLETRANSLATION_SYNC_PAGE_TREE=True)
     def test_page_tree_sync_on(self):
         with hooks.register_temporarily(
-            "construct_translated_pages_to_cascade_actions", self.unpublish_hook
-        ):
+                "construct_translated_pages_to_cascade_actions", self.unpublish_hook
+            ):
             for fn in hooks.get_hooks("construct_translated_pages_to_cascade_actions"):
-                response = fn([self.en_homepage], "unpublish")
-                if response:
+                if response := fn([self.en_homepage], "unpublish"):
                     self.assertIsInstance(response, dict)
                     self.assertEqual(len(response.items()), 1)
 

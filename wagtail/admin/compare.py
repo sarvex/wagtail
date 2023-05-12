@@ -310,8 +310,7 @@ class BaseSequenceBlockComparison(BlockComparison):
 class StreamBlockComparison(BaseSequenceBlockComparison):
     @staticmethod
     def get_blocks_from_value(val):
-        blocks = list(val) or []
-        return blocks
+        return list(val) or []
 
     def get_block_comparisons(self):
         return self.get_block_comparisons_by_id()
@@ -320,8 +319,7 @@ class StreamBlockComparison(BaseSequenceBlockComparison):
 class ListBlockComparison(BaseSequenceBlockComparison):
     @staticmethod
     def get_blocks_from_value(val):
-        blocks = list(val.bound_blocks) or []
-        return blocks
+        return list(val.bound_blocks) or []
 
     def get_block_comparisons(self):
         a_blocks = self.get_blocks_from_value(self.val_a)
@@ -367,21 +365,16 @@ class ListBlockComparison(BaseSequenceBlockComparison):
                 )
 
         if a_length > b_length:
-            for block in a_blocks[b_length:]:
-                # Deleted blocks
-                comparisons.append(
-                    comparison_class(block.block, True, False, block.value, None)
-                )
-
+            comparisons.extend(
+                comparison_class(block.block, True, False, block.value, None)
+                for block in a_blocks[b_length:]
+            )
         return comparisons
 
 
 class StreamFieldComparison(FieldComparison):
     def has_block_ids(self, val):
-        if not val:
-            return True
-
-        return bool(val[0].id)
+        return True if not val else bool(val[0].id)
 
     def htmldiff(self):
         # Our method for diffing streamfields relies on the blocks in both revisions having UUIDs.
@@ -410,17 +403,16 @@ class ChoiceFieldComparison(FieldComparison):
             dict(self.field.flatchoices).get(self.val_b, self.val_b), strings_only=True
         )
 
-        if self.val_a != self.val_b:
-            diffs = []
-
-            if val_a:
-                diffs += [("deletion", val_a)]
-            if val_b:
-                diffs += [("addition", val_b)]
-
-            return TextDiff(diffs).to_html()
-        else:
+        if self.val_a == self.val_b:
             return escape(val_a)
+        diffs = []
+
+        if val_a:
+            diffs += [("deletion", val_a)]
+        if val_b:
+            diffs += [("addition", val_b)]
+
+        return TextDiff(diffs).to_html()
 
 
 class M2MFieldComparison(FieldComparison):
@@ -438,21 +430,30 @@ class M2MFieldComparison(FieldComparison):
         sm = difflib.SequenceMatcher(0, items_a, items_b)
         changes = []
         for op, i1, i2, j1, j2 in sm.get_opcodes():
-            if op == "replace":
-                for item in items_a[i1:i2]:
-                    changes.append(("deletion", self.get_item_display(item)))
-                for item in items_b[j1:j2]:
-                    changes.append(("addition", self.get_item_display(item)))
-            elif op == "delete":
-                for item in items_a[i1:i2]:
-                    changes.append(("deletion", self.get_item_display(item)))
-            elif op == "insert":
-                for item in items_b[j1:j2]:
-                    changes.append(("addition", self.get_item_display(item)))
+            if op == "delete":
+                changes.extend(
+                    ("deletion", self.get_item_display(item))
+                    for item in items_a[i1:i2]
+                )
             elif op == "equal":
-                for item in items_a[i1:i2]:
-                    changes.append(("equal", self.get_item_display(item)))
-
+                changes.extend(
+                    ("equal", self.get_item_display(item))
+                    for item in items_a[i1:i2]
+                )
+            elif op == "insert":
+                changes.extend(
+                    ("addition", self.get_item_display(item))
+                    for item in items_b[j1:j2]
+                )
+            elif op == "replace":
+                changes.extend(
+                    ("deletion", self.get_item_display(item))
+                    for item in items_a[i1:i2]
+                )
+                changes.extend(
+                    ("addition", self.get_item_display(item))
+                    for item in items_b[j1:j2]
+                )
         # Convert changelist to HTML
         return TextDiff(changes, separator=", ").to_html()
 
@@ -479,23 +480,19 @@ class ForeignObjectComparison(FieldComparison):
     def htmldiff(self):
         obj_a, obj_b = self.get_objects()
 
-        if obj_a != obj_b:
-            if obj_a and obj_b:
-                # Changed
-                return TextDiff(
-                    [("deletion", force_str(obj_a)), ("addition", force_str(obj_b))]
-                ).to_html()
-            elif obj_b:
-                # Added
-                return TextDiff([("addition", force_str(obj_b))]).to_html()
-            elif obj_a:
-                # Removed
-                return TextDiff([("deletion", force_str(obj_a))]).to_html()
-        else:
-            if obj_a:
-                return escape(force_str(obj_a))
-            else:
-                return _("None")
+        if obj_a == obj_b:
+            return escape(force_str(obj_a)) if obj_a else _("None")
+        if obj_a and obj_b:
+            # Changed
+            return TextDiff(
+                [("deletion", force_str(obj_a)), ("addition", force_str(obj_b))]
+            ).to_html()
+        elif obj_b:
+            # Added
+            return TextDiff([("addition", force_str(obj_b))]).to_html()
+        elif obj_a:
+            # Removed
+            return TextDiff([("deletion", force_str(obj_a))]).to_html()
 
 
 class ChildRelationComparison:
@@ -516,14 +513,7 @@ class ChildRelationComparison:
         verbose_name = getattr(self.field, "verbose_name", None)
 
         if verbose_name is None:
-            # Relations don't have a verbose_name
-            if self.label:
-                # If the panel has a label, we set it instead.
-                # See InlinePanel.get_comparision for usage
-                verbose_name = self.label
-            else:
-                verbose_name = self.field.name.replace("_", " ")
-
+            verbose_name = self.label if self.label else self.field.name.replace("_", " ")
         return capfirst(verbose_name)
 
     def get_mapping(self, objs_a, objs_b):
@@ -566,9 +556,6 @@ class ChildRelationComparison:
         """
         map_forwards = {}
         map_backwards = {}
-        added = []
-        deleted = []
-
         # Match child objects on PK (ID)
         for a_idx, a_child in enumerate(objs_a):
             for b_idx, b_child in enumerate(objs_b):
@@ -611,15 +598,16 @@ class ChildRelationComparison:
             map_forwards[a_idx] = b_idx
             map_backwards[b_idx] = a_idx
 
-        # Mark unmapped objects as added/deleted
-        for a_idx, a_child in enumerate(objs_a):
-            if a_idx not in map_forwards:
-                deleted.append(a_idx)
-
-        for b_idx, b_child in enumerate(objs_b):
-            if b_idx not in map_backwards:
-                added.append(b_idx)
-
+        deleted = [
+            a_idx
+            for a_idx, a_child in enumerate(objs_a)
+            if a_idx not in map_forwards
+        ]
+        added = [
+            b_idx
+            for b_idx, b_child in enumerate(objs_b)
+            if b_idx not in map_backwards
+        ]
         return map_forwards, map_backwards, added, deleted
 
     def get_child_comparison(self, obj_a, obj_b):
@@ -654,10 +642,11 @@ class ChildRelationComparison:
                     self.get_child_comparison(objs_a[map_backwards[b_idx]], b_child)
                 )
 
-        for a_idx, a_child in objs_a.items():
-            if a_idx in deleted:
-                comparisons.append(self.get_child_comparison(a_child, None))
-
+        comparisons.extend(
+            self.get_child_comparison(a_child, None)
+            for a_idx, a_child in objs_a.items()
+            if a_idx in deleted
+        )
         return comparisons
 
     def has_changed(self):
@@ -725,33 +714,32 @@ class ChildObjectComparison:
             # Display the fields without diff as one of the versions are missing
             obj = self.obj_a or self.obj_b
 
-            for field_comparison in self.field_comparisons:
-                comparisons.append(field_comparison(obj, obj))
+            comparisons.extend(
+                field_comparison(obj, obj)
+                for field_comparison in self.field_comparisons
+            )
         else:
-            for field_comparison in self.field_comparisons:
-                comparisons.append(field_comparison(self.obj_a, self.obj_b))
-
+            comparisons.extend(
+                field_comparison(self.obj_a, self.obj_b)
+                for field_comparison in self.field_comparisons
+            )
         return comparisons
 
     def has_changed(self):
-        for comparison in self.get_field_comparisons():
-            if comparison.has_changed():
-                return True
-
-        return False
+        return any(
+            comparison.has_changed() for comparison in self.get_field_comparisons()
+        )
 
     def get_num_differences(self):
         """
         Returns the number of fields that differ between the two
         objects.
         """
-        num_differences = 0
-
-        for comparison in self.get_field_comparisons():
-            if comparison.has_changed():
-                num_differences += 1
-
-        return num_differences
+        return sum(
+            1
+            for comparison in self.get_field_comparisons()
+            if comparison.has_changed()
+        )
 
 
 class TextDiff:
@@ -763,9 +751,7 @@ class TextDiff:
         html = []
 
         for change_type, value in self.changes:
-            if change_type == "equal":
-                html.append(escape(value))
-            elif change_type == "addition":
+            if change_type == "addition":
                 html.append(
                     '<{tag} class="{classname}">{value}</{tag}>'.format(
                         tag=tag, classname=addition_class, value=escape(value)
@@ -778,6 +764,8 @@ class TextDiff:
                     )
                 )
 
+            elif change_type == "equal":
+                html.append(escape(value))
         return mark_safe(self.separator.join(html))
 
 
